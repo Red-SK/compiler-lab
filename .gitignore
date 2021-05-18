@@ -1,0 +1,8 @@
+# filter
+
+# 编译文件
+*.o
+main
+
+# vscode配置文件
+**/.vscode
