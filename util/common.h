@@ -1,6 +1,6 @@
 #ifndef _COMMON_H_
 #define _COMMON_H_
 
-#define uint unsigned int
+typedef unsigned int uint; 
 
 #endif

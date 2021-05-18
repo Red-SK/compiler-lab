@@ -2,6 +2,9 @@
 #define _TOKENIZER_H_
 
 #include "common.h"
+#include <string>
+
+using namespace std;
 
 enum TokenType {
     UNKNOWN, // 未知类型
@@ -40,14 +43,16 @@ enum TokenType {
     CIR_LEFT_BRACKET, // (
     CIR_RIGHT_BRACKET, // )
     ERROR
-}
+};
 
 struct Token {
     const char* start; // 字符指针，指向token内容的起始位置
     string lex; // 词素(内容本身)
     TokenType type; // Token类型
     uint curLine; // 当前行
-    uint length;
+    uint length; // 长度
 };
+
+char* readFile(const char* path);
 
 #endif
