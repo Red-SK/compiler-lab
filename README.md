@@ -55,6 +55,8 @@ make clean
 
 ### 标识符
 
+（该部分存在bug，仍在改进）
+
 - 变量名（形如real num中的`num`）
 - 函数名（形如int foo()中的`foo`）
 
