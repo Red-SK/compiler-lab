@@ -15,7 +15,7 @@ void testTokenizer() {
 
 int main(int argc, char** argv) {
     cout << "Welcome!" << endl;
-    char* contentPath;
+    string contentPath;
     if(argc == 1) {
         contentPath = readFile("test/test.lex"); 
     } else {

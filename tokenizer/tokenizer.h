@@ -44,19 +44,16 @@ typedef enum {
     SQ_LEFT_BRACKET, // [
     SQ_RIGHT_BRACKET, // ]
     CIR_LEFT_BRACKET, // (
-    CIR_RIGHT_BRACKET, // )
-    ERROR
+    CIR_RIGHT_BRACKET // )
 } TokenType;
 
 struct Token {
-    const char* start; // 字符指针，指向token内容的起始位置
     string lex; // 词素(内容本身)
     TokenType type; // Token类型
-    uint length; // 长度
 };
 
-char* readFile(const char* path); // 读取文本文件
+string readFile(const char* path); // 读取文本文件
 Token* makeToken(char* str, uint len, TokenType type, uint curLine); // 字符串转Token
-int lexToTokens(char* content, vector<Token>& tokens); // lex转tokens
+int lexToTokens(string& content, vector<Token>& tokens); // lex转tokens
 
 #endif
