@@ -15,8 +15,13 @@ void testTokenizer() {
 
 int main(int argc, char** argv) {
     cout << "Welcome!" << endl;
-    char* content = readFile("test.lex"); 
-    int cnt = lexToTokens(content, tokens);
+    char* contentPath;
+    if(argc == 1) {
+        contentPath = readFile("test/test.lex"); 
+    } else {
+        contentPath = readFile(argv[1]); 
+    }
+    int cnt = lexToTokens(contentPath, tokens);
     testTokenizer();
     cout << cnt << endl;
     return 0;

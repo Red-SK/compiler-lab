@@ -190,46 +190,34 @@ int lexToTokens(char* content, vector<Token>& tokens) {
                     tokens.push_back(*makeToken(content+start,end-start+1,BREAK));
                 }
                 else {
-                    if(isCharacter(content[start+1]) || content[start+1] == '_') {
-                        end++;
-                        while(isCharacter(content[end]) || content[end] == '_') end++;
-                    } 
+                    while(isCharacter(content[end+1]) || content[end+1] == '_') end++;                      
                     tokens.push_back(*makeToken(content+start,end-start+1,ID));
                 }
             }
             else if(content[start] == 'i') {
+                // int
                 if(content[start+1] == 'n' && content[start+2] == 't') {
                     end += 2;
                     tokens.push_back(*makeToken(content+start,end-start+1,INT));
                 }
-                else if(content[start+1] == 'f') {
+                // if --> if()
+                else if(content[start+1] == 'f' && content[start+2] == '(') {
                     end += 1;
                     tokens.push_back(*makeToken(content+start,end-start+1,IF));
                 }
                 else {
-                    if(isCharacter(content[start+1]) || content[start+1] == '_') {
-                        end++;
-                        while(isCharacter(content[end]) || content[end] == '_') end++;
-                    } 
+                    while(isCharacter(content[end+1]) || content[end+1] == '_') end++;   
                     tokens.push_back(*makeToken(content+start,end-start+1,ID));
                 }
             }
             else if(content[start] == 'e') {
                 if(content[start+1] == 'l' && content[start+2] == 's' &&
-                   content[start+3] == 'e') {
+                   content[start+3] == 'e' && content[start+4] == '{') {
                     end += 3;
                     tokens.push_back(*makeToken(content+start,end-start+1,ELSE));
                 }
-                else if(content[start+1] == 'l' && content[start+2] == 'i' &&
-                   content[start+3] == 'f') {
-                    end += 3;
-                    tokens.push_back(*makeToken(content+start,end-start+1,ELIF));
-                }
                 else {
-                    if(isCharacter(content[start+1]) || content[start+1] == '_') {
-                        end++;
-                        while(isCharacter(content[end]) || content[end] == '_') end++;
-                    } 
+                    while(isCharacter(content[end+1]) || content[end+1] == '_') end++;   
                     tokens.push_back(*makeToken(content+start,end-start+1,ID));
                 }
             }
@@ -244,10 +232,7 @@ int lexToTokens(char* content, vector<Token>& tokens) {
                     tokens.push_back(*makeToken(content+start,end-start+1,FOR));
                 }
                 else {
-                    if(isCharacter(content[start+1]) || content[start+1] == '_') {
-                        end++;
-                        while(isCharacter(content[end]) || content[end] == '_') end++;
-                    } 
+                    while(isCharacter(content[end+1]) || content[end+1] == '_') end++;   
                     tokens.push_back(*makeToken(content+start,end-start+1,ID));
                 }
             }
@@ -265,10 +250,7 @@ int lexToTokens(char* content, vector<Token>& tokens) {
                     }
                 }
                 else {
-                    if(isCharacter(content[start+1]) || content[start+1] == '_') {
-                        end++;
-                        while(isCharacter(content[end]) || content[end] == '_') end++;
-                    } 
+                    while(isCharacter(content[end+1]) || content[end+1] == '_') end++;    
                     tokens.push_back(*makeToken(content+start,end-start+1,ID));
                 }
             }
@@ -279,18 +261,12 @@ int lexToTokens(char* content, vector<Token>& tokens) {
                     tokens.push_back(*makeToken(content+start,end-start+1,TRUE));
                 }
                 else {
-                    if(isCharacter(content[start+1]) || content[start+1] == '_') {
-                        end++;
-                        while(isCharacter(content[end]) || content[end] == '_') end++;
-                    } 
+                    while(isCharacter(content[end+1]) || content[end+1] == '_') end++;    
                     tokens.push_back(*makeToken(content+start,end-start+1,ID));
                 }
             }
             else {
-                if(isCharacter(content[start+1]) || content[start+1] == '_') {
-                    end++;
-                    while(isCharacter(content[end]) || content[end] == '_') end++;
-                }     
+                while(isCharacter(content[end+1]) || content[end+1] == '_') end++;     
                 tokens.push_back(*makeToken(content+start,end-start+1,ID));
             }
             start = ++end;
