@@ -1,7 +1,8 @@
-// this is a test file
-real elsee,iff,fal,tru; // test for key word
+// 这是个测试文件
+real elsee,iff,fal,tru; // 恶心一下自己
 if (aa>=boo || false && 1) {
-    aa = boo + 3.0; 
+    aa = boo + 3.0;
+    rea = fal / tru; / 
 }
 else{int elsee;elsee=3;}
 int intt = 44;
