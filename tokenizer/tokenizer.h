@@ -50,10 +50,15 @@ typedef enum {
 struct Token {
     string lex; // 词素(内容本身)
     TokenType type; // Token类型
+    int curLine;
+    int start;
+    int end;
+    int curStart;
+    int curEnd;
 };
 
 string readFile(const char* path); // 读取文本文件
-Token* makeToken(char* str, uint len, TokenType type, uint curLine); // 字符串转Token
+Token* makeToken(string str, TokenType type); // 字符串转Token
 int lexToTokens(string& content, vector<Token>& tokens); // lex转tokens
 
 #endif

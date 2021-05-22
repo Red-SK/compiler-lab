@@ -5,6 +5,11 @@
 #include <string>
 #include <sstream>
 
+int strStart = 0; 
+int strEnd = 0;
+int curLine = 1; // 起始行
+int totalCharsExceptCur = 0; // 除了当前行，其他行字符数总和
+
 // 读取文本文件
 string readFile(const char* path) {
     int total = 0;
@@ -17,7 +22,7 @@ string readFile(const char* path) {
     struct stat fileStat;
     stat(path, &fileStat);
     size_t fileSize = fileStat.st_size;
-    cout << path << ": " << fileSize << " Bytes." << endl;
+    cout << path << " (size): " << fileSize << " Bytes." << endl;
 	stringstream ss;
 	ss << srcFile.rdbuf();
 	string fileContent = ss.str();
@@ -30,6 +35,11 @@ Token* makeToken(string str, TokenType type) {
     Token* token = new Token;
     token->lex = str;
     token->type = type;
+    token->start = strStart;
+    token->end = strEnd;
+    token->curLine = curLine;
+    token->curStart = strStart - totalCharsExceptCur;
+    token->curEnd = strEnd - totalCharsExceptCur;
     return token;
 }
 
@@ -47,240 +57,249 @@ static bool isCharacter(char c) {
 
 // lex转tokens
 int lexToTokens(string& content, vector<Token>& tokens) {
-    int start = 0; 
-    int end = 0;
-    while(content[start] != '\0') {
+    while(content[strStart] != '\0') {
         // skip blank space
-        if(content[start] == ' ' || content[start] == '\n' || content[start] == '\r') {
-            start = ++end;
+        if(content[strStart] == ' ' || content[strStart] == '\n' || content[strStart] == '\r') {
+            if(content[strStart] == '\n') {
+                curLine++;
+                totalCharsExceptCur = strEnd + 1;
+            }
+            strStart = ++strEnd;   
         }
-        else if(content[start] == '+') {
-            tokens.push_back(*makeToken(content.substr(start,end-start+1),ADD));
-            start = ++end;
+        else if(content[strStart] == '+') {
+            tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),ADD));
+            strStart = ++strEnd;
         }
-        else if(content[start] == '-') {
-            tokens.push_back(*makeToken(content.substr(start,end-start+1),SUB));
-            start = ++end;
+        else if(content[strStart] == '-') {
+            tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),SUB));
+            strStart = ++strEnd;
         }
-        else if(content[start] == '*') {
-            tokens.push_back(*makeToken(content.substr(start,end-start+1),MUL));
-            start = ++end;
+        else if(content[strStart] == '*') {
+            tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),MUL));
+            strStart = ++strEnd;
         }
-        else if(content[start] == '/') {
-            tokens.push_back(*makeToken(content.substr(start,end-start+1),DIV));
-            start = ++end;
+        else if(content[strStart] == '/') {
+            if(content[strStart+1] == '/') {
+                while(content[strStart] != '\n') strStart = ++strEnd;
+                curLine++;
+                totalCharsExceptCur = strEnd + 1;
+                strStart = ++strEnd; 
+            }else {
+                tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),DIV));
+                strStart = ++strEnd;
+            }
         }
-        else if(content[start] == '(') {
-            tokens.push_back(*makeToken(content.substr(start,end-start+1),CIR_LEFT_BRACKET));
-            start = ++end;
+        else if(content[strStart] == '(') {
+            tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),CIR_LEFT_BRACKET));
+            strStart = ++strEnd;
         }
-        else if(content[start] == ')') {
-            tokens.push_back(*makeToken(content.substr(start,end-start+1),CIR_RIGHT_BRACKET));
-            start = ++end;
+        else if(content[strStart] == ')') {
+            tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),CIR_RIGHT_BRACKET));
+            strStart = ++strEnd;
         }
-        else if(content[start] == '[') {
-            tokens.push_back(*makeToken(content.substr(start,end-start+1),SQ_LEFT_BRACKET));
-            start = ++end;
+        else if(content[strStart] == '[') {
+            tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),SQ_LEFT_BRACKET));
+            strStart = ++strEnd;
         }
-        else if(content[start] == ']') {
-            tokens.push_back(*makeToken(content.substr(start,end-start+1),SQ_RIGHT_BRACKET));
-            start = ++end;
+        else if(content[strStart] == ']') {
+            tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),SQ_RIGHT_BRACKET));
+            strStart = ++strEnd;
         }
-        else if(content[start] == '{') {
-            tokens.push_back(*makeToken(content.substr(start,end-start+1),LEFT_BLOCK));
-            start = ++end;
+        else if(content[strStart] == '{') {
+            tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),LEFT_BLOCK));
+            strStart = ++strEnd;
         }
-        else if(content[start] == '}') {
-            tokens.push_back(*makeToken(content.substr(start,end-start+1),RIGHT_BLOCK));
-            start = ++end;
+        else if(content[strStart] == '}') {
+            tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),RIGHT_BLOCK));
+            strStart = ++strEnd;
         }
-        else if(content[start] == '<') {
-            if(content[start+1] == '=') {
-                end++;
-                tokens.push_back(*makeToken(content.substr(start,end-start+1),LESS_EQUAL));              
-                start = ++end;
+        else if(content[strStart] == '<') {
+            if(content[strStart+1] == '=') {
+                strEnd++;
+                tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),LESS_EQUAL));              
+                strStart = ++strEnd;
             } else {
-                tokens.push_back(*makeToken(content.substr(start,end-start+1),LESS));
-                start = ++end;
+                tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),LESS));
+                strStart = ++strEnd;
             }          
         }
-        else if(content[start] == '>') {
-            if(content[start+1] == '=') {
-                end++;
-                tokens.push_back(*makeToken(content.substr(start,end-start+1),GREATER_EQUAL));              
-                start = ++end;
+        else if(content[strStart] == '>') {
+            if(content[strStart+1] == '=') {
+                strEnd++;
+                tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),GREATER_EQUAL));              
+                strStart = ++strEnd;
             } else {
-                tokens.push_back(*makeToken(content.substr(start,end-start+1),GREATER));
-                start = ++end;
+                tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),GREATER));
+                strStart = ++strEnd;
             }          
         }
-        else if(content[start] == '=') {
-            if(content[start+1] == '=') {
-                end++;
-                tokens.push_back(*makeToken(content.substr(start,end-start+1),EQUAL));                
-                start = ++end;
+        else if(content[strStart] == '=') {
+            if(content[strStart+1] == '=') {
+                strEnd++;
+                tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),EQUAL));                
+                strStart = ++strEnd;
             } else {
-                tokens.push_back(*makeToken(content.substr(start,end-start+1),ASSIGN));
-                start = ++end;
+                tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),ASSIGN));
+                strStart = ++strEnd;
             }          
         }
-        else if(content[start] == '!') {
-            if(content[start+1] == '=') {
-                end++;
-                tokens.push_back(*makeToken(content.substr(start,end-start+1),NOT_EQUAL));              
-                start = ++end;
+        else if(content[strStart] == '!') {
+            if(content[strStart+1] == '=') {
+                strEnd++;
+                tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),NOT_EQUAL));              
+                strStart = ++strEnd;
             } else {
-                tokens.push_back(*makeToken(content.substr(start,end-start+1),NOT));
-                start = ++end;
+                tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),NOT));
+                strStart = ++strEnd;
             }      
         }
-        else if(content[start] == '&') {
-            if(content[start+1] == '&') {
-                end++;
-                tokens.push_back(*makeToken(content.substr(start,end-start+1),AND));                
-                start = ++end;
+        else if(content[strStart] == '&') {
+            if(content[strStart+1] == '&') {
+                strEnd++;
+                tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),AND));                
+                strStart = ++strEnd;
             } else {
 
             }
         }
-        else if(content[start] == '|') {
-            if(content[start+1] == '|') {
-                end++;
-                tokens.push_back(*makeToken(content.substr(start,end-start+1),OR));                
-                start = ++end;
+        else if(content[strStart] == '|') {
+            if(content[strStart+1] == '|') {
+                strEnd++;
+                tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),OR));                
+                strStart = ++strEnd;
             } else {
                 
             }
         }
-        else if(content[start] == ';') {
-            tokens.push_back(*makeToken(content.substr(start,end-start+1),SEMICOLON));
-            start = ++end;
+        else if(content[strStart] == ';') {
+            tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),SEMICOLON));
+            strStart = ++strEnd;
         }
-        else if(content[start] == ',') {
-            tokens.push_back(*makeToken(content.substr(start,end-start+1),COMMA));
-            start = ++end;
+        else if(content[strStart] == ',') {
+            tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),COMMA));
+            strStart = ++strEnd;
         }
         // 数字
-        else if(isDigit(content[start])) {
-            while(isDigit(content[end])) end++;
-            if(content[end] == '.') { // 实数
-                end++;
-                while(isDigit(content[end])) end++;
-                tokens.push_back(*makeToken(content.substr(start,end-start),REAL_NUM));
+        else if(isDigit(content[strStart])) {
+            while(isDigit(content[strEnd])) strEnd++;
+            if(content[strEnd] == '.') { // 实数
+                strEnd++;
+                while(isDigit(content[strEnd])) strEnd++;
+                tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart),REAL_NUM));
             } else { // 整数
-                tokens.push_back(*makeToken(content.substr(start,end-start),INT_NUM));
+                tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart),INT_NUM));
             }
-            start = end;
+            strStart = strEnd;
         }
         // 关键字和id
-        else if(isCharacter(content[start])) {
+        else if(isCharacter(content[strStart])) {
             /* 关键字 */
-            if(content[start] == 'b') {
-                if(content[start+1] == 'o' && content[start+2] == 'o' && 
-                   content[start+3] == 'l' && !isCharacter(content[start+4])) {
-                    end += 3;
-                    tokens.push_back(*makeToken(content.substr(start,end-start+1),BOOL));
+            if(content[strStart] == 'b') {
+                if(content[strStart+1] == 'o' && content[strStart+2] == 'o' && 
+                   content[strStart+3] == 'l' && !isCharacter(content[strStart+4])) {
+                    strEnd += 3;
+                    tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),BOOL));
                 }
-                else if(content[start+1] == 'r' && content[start+2] == 'e' &&
-                        content[start+3] == 'a' && content[start+4] == 'k' &&
-                        !isCharacter(content[start+5])) {
-                    end += 4;
-                    tokens.push_back(*makeToken(content.substr(start,end-start+1),BREAK));
+                else if(content[strStart+1] == 'r' && content[strStart+2] == 'e' &&
+                        content[strStart+3] == 'a' && content[strStart+4] == 'k' &&
+                        !isCharacter(content[strStart+5])) {
+                    strEnd += 4;
+                    tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),BREAK));
                 }
                 else {
-                    while(isCharacter(content[end+1]) || content[end+1] == '_') end++;                      
-                    tokens.push_back(*makeToken(content.substr(start,end-start+1),ID));
+                    while(isCharacter(content[strEnd+1]) || content[strEnd+1] == '_') strEnd++;                      
+                    tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),ID));
                 }
             }
-            else if(content[start] == 'i') {
+            else if(content[strStart] == 'i') {
                 // int
-                if(content[start+1] == 'n' && content[start+2] == 't' &&
-                   !isCharacter(content[start+3])) {
-                    end += 2;
-                    tokens.push_back(*makeToken(content.substr(start,end-start+1),INT));
+                if(content[strStart+1] == 'n' && content[strStart+2] == 't' &&
+                   !isCharacter(content[strStart+3])) {
+                    strEnd += 2;
+                    tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),INT));
                 }
                 // if --> if()
-                else if(content[start+1] == 'f' && !isCharacter(content[start+2])) {
-                    end += 1;
-                    tokens.push_back(*makeToken(content.substr(start,end-start+1),IF));
+                else if(content[strStart+1] == 'f' && !isCharacter(content[strStart+2])) {
+                    strEnd += 1;
+                    tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),IF));
                 }
                 else {
-                    while(isCharacter(content[end+1]) || content[end+1] == '_') end++;   
-                    tokens.push_back(*makeToken(content.substr(start,end-start+1),ID));
+                    while(isCharacter(content[strEnd+1]) || content[strEnd+1] == '_') strEnd++;   
+                    tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),ID));
                 }
             }
-            else if(content[start] == 'e') {
-                if(content[start+1] == 'l' && content[start+2] == 's' &&
-                   content[start+3] == 'e' && !isCharacter(content[start+4])) {
-                    end += 3;
-                    tokens.push_back(*makeToken(content.substr(start,end-start+1),ELSE));
+            else if(content[strStart] == 'e') {
+                if(content[strStart+1] == 'l' && content[strStart+2] == 's' &&
+                   content[strStart+3] == 'e' && !isCharacter(content[strStart+4])) {
+                    strEnd += 3;
+                    tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),ELSE));
                 }
                 else {
-                    while(isCharacter(content[end+1]) || content[end+1] == '_') end++;   
-                    tokens.push_back(*makeToken(content.substr(start,end-start+1),ID));
+                    while(isCharacter(content[strEnd+1]) || content[strEnd+1] == '_') strEnd++;   
+                    tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),ID));
                 }
             }
-            else if(content[start] == 'f') {
-                if(content[start+1] == 'a' && content[start+2] == 'l' &&
-                   content[start+3] == 's' && content[start+4] == 'e' && 
-                   !isCharacter(content[start+5])) {
-                    end += 4;
-                    tokens.push_back(*makeToken(content.substr(start,end-start+1),FALSE));
+            else if(content[strStart] == 'f') {
+                if(content[strStart+1] == 'a' && content[strStart+2] == 'l' &&
+                   content[strStart+3] == 's' && content[strStart+4] == 'e' && 
+                   !isCharacter(content[strStart+5])) {
+                    strEnd += 4;
+                    tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),FALSE));
                 }
-                else if(content[start+1] == 'o' && content[start+2] == 'r' &&
-                       !isCharacter(content[start+3])) {
-                    end += 2;
-                    tokens.push_back(*makeToken(content.substr(start,end-start+1),FOR));
+                else if(content[strStart+1] == 'o' && content[strStart+2] == 'r' &&
+                       !isCharacter(content[strStart+3])) {
+                    strEnd += 2;
+                    tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),FOR));
                 }
                 else {
-                    while(isCharacter(content[end+1]) || content[end+1] == '_') end++;   
-                    tokens.push_back(*makeToken(content.substr(start,end-start+1),ID));
+                    while(isCharacter(content[strEnd+1]) || content[strEnd+1] == '_') strEnd++;   
+                    tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),ID));
                 }
             }
-            else if(content[start] == 'r') {
-                if(content[start+1] == 'e') {
-                    if(content[start+2] == 'a' && content[start+3] == 'l' &&
-                       !isCharacter(content[start+4])) {
-                        end += 3;
-                        tokens.push_back(*makeToken(content.substr(start,end-start+1),REAL));
+            else if(content[strStart] == 'r') {
+                if(content[strStart+1] == 'e') {
+                    if(content[strStart+2] == 'a' && content[strStart+3] == 'l' &&
+                       !isCharacter(content[strStart+4])) {
+                        strEnd += 3;
+                        tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),REAL));
                     }
-                    else if(content[start+2] == 't' && content[start+3] == 'u' &&
-                       content[start+4] == 'r' && content[start+5] == 'n' &&
-                       !isCharacter(content[start+5])) {
-                        end += 5;
-                        tokens.push_back(*makeToken(content.substr(start,end-start+1),RETURN));
+                    else if(content[strStart+2] == 't' && content[strStart+3] == 'u' &&
+                       content[strStart+4] == 'r' && content[strStart+5] == 'n' &&
+                       !isCharacter(content[strStart+5])) {
+                        strEnd += 5;
+                        tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),RETURN));
                     }
                     else {
-                        while(isCharacter(content[end+1]) || content[end+1] == '_') end++;    
-                        tokens.push_back(*makeToken(content.substr(start,end-start+1),ID));
+                        while(isCharacter(content[strEnd+1]) || content[strEnd+1] == '_') strEnd++;    
+                        tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),ID));
                     }
                 }
                 else {
-                    while(isCharacter(content[end+1]) || content[end+1] == '_') end++;    
-                    tokens.push_back(*makeToken(content.substr(start,end-start+1),ID));
+                    while(isCharacter(content[strEnd+1]) || content[strEnd+1] == '_') strEnd++;    
+                    tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),ID));
                 }
             }
-            else if(content[start] == 't') {
-                if(content[start+1] == 'r' && content[start+2] == 'u' &&
-                   content[start+3] == 'e' && !isCharacter(content[start+4])) {
-                    end += 3;
-                    tokens.push_back(*makeToken(content.substr(start,end-start+1),TRUE));
+            else if(content[strStart] == 't') {
+                if(content[strStart+1] == 'r' && content[strStart+2] == 'u' &&
+                   content[strStart+3] == 'e' && !isCharacter(content[strStart+4])) {
+                    strEnd += 3;
+                    tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),TRUE));
                 }
                 else {
-                    while(isCharacter(content[end+1]) || content[end+1] == '_') end++;    
-                    tokens.push_back(*makeToken(content.substr(start,end-start+1),ID));
+                    while(isCharacter(content[strEnd+1]) || content[strEnd+1] == '_') strEnd++;    
+                    tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),ID));
                 }
             }
             else {
-                while(isCharacter(content[end+1]) || content[end+1] == '_') end++;     
-                tokens.push_back(*makeToken(content.substr(start,end-start+1),ID));
+                while(isCharacter(content[strEnd+1]) || content[strEnd+1] == '_') strEnd++;     
+                tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),ID));
             }
-            start = ++end;
+            strStart = ++strEnd;
         }
         else {
-            tokens.push_back(*makeToken(content.substr(start,end-start+1),UNKNOWN));
-            start = ++end;
+            tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),UNKNOWN));
+            strStart = ++strEnd;
         }
     }
-    return end;
+    return strEnd;
 }
