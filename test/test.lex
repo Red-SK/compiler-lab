@@ -5,6 +5,7 @@ if (aa>=boo || false && 1) {
     rea = fal / tru; / 
 }
 else{int elsee;elsee=3;}
+while(1);
 int intt = 44;
 real reall;
 bool booll = true;

@@ -40,7 +40,7 @@ make clean
 
 # 实验内容
 
-## 词法分析（已完成）
+## 词法分析✔
 
 ### 关键字
 
@@ -53,9 +53,8 @@ make clean
 - if
 - else if 
 - else
-- for 
+- while
 - break
-- return 
 
 ### 标识符
 
@@ -81,7 +80,140 @@ make clean
 - `(`,`)`
 - 支持`//`的行注释
 
-## 语法分析（未完成）
+## 语法分析（进行中）
+
+### 文法设计：LL(1)
+
+这是一个类C的文法，我们目前打算用LL(1)
+
+文法G[Program]如下：（大写字母开头为非终结符，小写字母开头为终结符）
+
+```grammar
+Program   → Block
+Block     → { Decls Stmts }
+Decls     → Decl Decls | ε
+Decl      → Type id;
+Type      → bool Type' | int Type' | real Type'
+Type'     → [num]Type' | ε
+Stmts     → Stmt Stmts | ε
+Stmt      → Var = Bool; 
+          | if(Bool) Block IfStmt
+          | while(Bool) Stmt
+          | break;
+          | Block
+IfStmt    → else Block | ε
+Var 	  → id Var'
+Var'      → [num]Var' | ε
+Bool      → Join Bool'
+Bool'     → || Bool | ε
+Join      → Equality Join'
+Join'     → && Join | ε
+Equality  → Rel Equality'
+Equality' → == Equality | != Equality | ε
+Rel 	  → Expr Rel'
+Rel' 	  → <Rel2 | >Rel2 | ε
+Rel2 	  → Expr | =Expr
+Expr 	  → Term Expr'
+Expr'	  → +Expr | -Expr | ε
+Term 	  → Unary Term'
+Term'	  → *Term | /Term | ε
+Unary	  → !Unary | -Unary | Factor
+Factor	  → (Bool) | Var | num | true | false
+```
+
+### FIRST集
+
+| 非终结符  |             FIRST集             |
+| :-------: | :-----------------------------: |
+|  Program  |             {  {  }             |
+|   Block   |             {  {  }             |
+|   Decls   |      {  int,real,bool,ε  }      |
+|   Decl    |       {  int,real,bool  }       |
+|   Type    |       {  int,real,bool  }       |
+|   Type'   |            {  [,ε  }            |
+|   Stmts   |   {  id,if,while,break,{,ε  }   |
+|   Stmt    |    {  id,if,while,break,{  }    |
+|  IfStmt   |          {  else,ε  }           |
+|    Var    |            {  id  }             |
+|   Var'    |            {  [,ε  }            |
+|   Bool    |  {  !,-,(,id,num,true,false  }  |
+|   Bool'   |          {  \|\|,ε  }           |
+|   Join    |  {  !,-,(,id,num,true,false  }  |
+|   Join'   |           {  &&,ε  }            |
+| Equality  |  {  !,-,(,id,num,true,false  }  |
+| Equality' |           {  =,!,ε  }           |
+|    Rel    |  {  !,-,(,id,num,true,false  }  |
+|   Rel'    |           {  <,>,ε  }           |
+|   Rel2    | {  !,-,(,id,num,true,false,=  } |
+|   Expr    |  {  !,-,(,id,num,true,false  }  |
+|   Expr'   |           {  +,-,ε  }           |
+|   Term    |  {  !,-,(,id,num,true,false  }  |
+|   Term'   |           {  *,/,ε  }           |
+|   Unary   |  {  !,-,(,id,num,true,false  }  |
+|  Factor   |    {  (,id,num,true,false  }    |
+
+### FOLLOW集
+
+|  非终结符  |                   FOLLOW集                   |
+|  :------: |  :----------------------------------------:  |
+| Program   |                   {  $  }                    |
+|   Block   |                   {  $,else,id,if,while,break,{,}  }                   |
+|   Decls   | {  id,if,while,break,{,}  } |
+|   Decl    | {  int,real,bool,id,if,while,break,{,}  } |
+|   Type    |             {  id  }             |
+|   Type'   |                  {  id  }                  |
+|   Stmts   |         {  }  }         |
+|   Stmt    | {  id,if,while,break,{,},else  } |
+| IfStmt(x) |                 {  id,if,while,break,{,},else  }                 |
+|    Var    |                   {  *,/,+,-,<,>, =,!,&&,\|\|,;,),[,id  }                   |
+|  Var'(x) |                  {  *,/,+,-,<,>, =,!,&&,\|\|,;,),[,id  }                  |
+|   Bool    |  {  ;,),[,id  }  |
+|   Bool'   |                 {  ;,),[,id  }                 |
+|   Join    |  {  \|\|,;,),[,id  }  |
+|   Join'   |                  {  \|\|,;,),[,id  }                  |
+| Equality  |  {  &&,\|\|,;,),[,id  }  |
+| Equality' |            {  &&,\|\|,;,),[,id  }      |
+|    Rel    |  {  =,!,&&,\|\|,;,),[,id  }  |
+|   Rel'    |    {  =,!,&&,\|\|,;,),[,id  }       |
+|   Rel2    | {  =,!,&&,\|\|,;,),[,id  } |
+|   Expr    |  {  <,>, =,!,&&,\|\|,;,),[,id  }  |
+|   Expr'   |   {  <,>, =,!,&&,\|\|,;,),[,id  }   |
+|   Term    |  {  +,-,<,>, =,!,&&,\|\|,;,),[,id  }  |
+|   Term'   | {  +,-,<,>, =,!,&&,\|\|,;,),[,id  } |
+|   Unary   |  {  *,/,+,-,<,>, =,!,&&,\|\|,;,),[,id  }  |
+|  Factor   |    {  *,/,+,-,<,>, =,!,&&,\|\|,;,),[,id  }    |
+
+很不幸`var'`和`IfStmt`冲突了，淦，只能尝试LR(1)
+
+### LR(1)的重新尝试
+
+文法G[Program]如下：（大写字母开头为非终结符，小写字母开头为终结符）
+
+```grammar
+Program   → Block
+Block     → { Decls Stmts }
+Decls     → Decl Decls | ε
+Decl      → Type id;
+Type      → Type[int_num] | Type[real_num] | int | real | bool
+Stmts     → Stmts Stmt | ε
+Stmt      → Var=Bool;
+          | if(Bool) Stmt
+          | if(Bool) Stmt else Stmt
+          | while(Bool) Stmt
+          | break;
+          | Block
+Var      → Var[num] | id
+Bool     → Bool||Join | Join
+Join     → Join&&Equality | Equality
+Equality → Equality==Rel | Equality!=Rel | Rel
+Rel      → Expr<Expr | Expr<=Expr | Expr>=Expr | Expr>Expr | Expr
+Expr     → Expr+Term | Expr-Term | Term
+Term     → Term*Unary | Term/Unary | Unary
+Unary	 → !Unary | -Unary | Factor
+Factor	 → (Bool) | Var | int_num | real_num | true | false
+```
+
+
 
 ## 语法制导翻译（未完成）
 

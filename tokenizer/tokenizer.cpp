@@ -246,11 +246,6 @@ int lexToTokens(string& content, vector<Token>& tokens) {
                     strEnd += 4;
                     tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),FALSE));
                 }
-                else if(content[strStart+1] == 'o' && content[strStart+2] == 'r' &&
-                       !isCharacter(content[strStart+3])) {
-                    strEnd += 2;
-                    tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),FOR));
-                }
                 else {
                     while(isCharacter(content[strEnd+1]) || content[strEnd+1] == '_') strEnd++;   
                     tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),ID));
@@ -262,12 +257,6 @@ int lexToTokens(string& content, vector<Token>& tokens) {
                        !isCharacter(content[strStart+4])) {
                         strEnd += 3;
                         tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),REAL));
-                    }
-                    else if(content[strStart+2] == 't' && content[strStart+3] == 'u' &&
-                       content[strStart+4] == 'r' && content[strStart+5] == 'n' &&
-                       !isCharacter(content[strStart+5])) {
-                        strEnd += 5;
-                        tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),RETURN));
                     }
                     else {
                         while(isCharacter(content[strEnd+1]) || content[strEnd+1] == '_') strEnd++;    
@@ -284,6 +273,18 @@ int lexToTokens(string& content, vector<Token>& tokens) {
                    content[strStart+3] == 'e' && !isCharacter(content[strStart+4])) {
                     strEnd += 3;
                     tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),TRUE));
+                }
+                else {
+                    while(isCharacter(content[strEnd+1]) || content[strEnd+1] == '_') strEnd++;    
+                    tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),ID));
+                }
+            }
+            else if(content[strStart] == 'w') {
+                if(content[strStart+1] == 'h' && content[strStart+2] == 'i' &&
+                   content[strStart+3] == 'l' && content[strStart+4] == 'e' &&
+                   !isCharacter(content[strStart+5])) {
+                    strEnd += 4;
+                    tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),WHILE));
                 }
                 else {
                     while(isCharacter(content[strEnd+1]) || content[strEnd+1] == '_') strEnd++;    

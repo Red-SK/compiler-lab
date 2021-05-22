@@ -19,8 +19,7 @@ typedef enum {
     IF,
     ELIF, // else-if
     ELSE,
-    FOR,
-    RETURN,
+    WHILE,
     BREAK,
     ID, //标识符
     ADD,
@@ -50,11 +49,11 @@ typedef enum {
 struct Token {
     string lex; // 词素(内容本身)
     TokenType type; // Token类型
-    int curLine;
-    int start;
-    int end;
-    int curStart;
-    int curEnd;
+    int curLine; // 当前行
+    int start; // 起始指针（全局）
+    int end; // 尾指针（全局）
+    int curStart;// 起始指针（当前行）
+    int curEnd;// 尾指针（当前行）
 };
 
 string readFile(const char* path); // 读取文本文件
