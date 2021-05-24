@@ -8,7 +8,6 @@ string tokenList[] = {
     "TRUE",
     "FALSE",
     "IF",
-    "ELIF", 
     "ELSE",
     "WHILE",
     "BREAK",

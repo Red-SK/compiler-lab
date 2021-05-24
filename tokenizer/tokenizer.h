@@ -17,7 +17,6 @@ typedef enum {
     TRUE,
     FALSE,
     IF,
-    ELIF, // else-if
     ELSE,
     WHILE,
     BREAK,

@@ -133,9 +133,9 @@ Factor	  → (Bool) | Var | num | true | false
 |   Type'   |            {  [,ε  }            |
 |   Stmts   |   {  id,if,while,break,{,ε  }   |
 |   Stmt    |    {  id,if,while,break,{  }    |
-|  IfStmt   |          {  else,ε  }           |
+| IfStmt(x) |          {  else,ε  }           |
 |    Var    |            {  id  }             |
-|   Var'    |            {  [,ε  }            |
+|  Var'(x)  |            {  [,ε  }            |
 |   Bool    |  {  !,-,(,id,num,true,false  }  |
 |   Bool'   |          {  \|\|,ε  }           |
 |   Join    |  {  !,-,(,id,num,true,false  }  |
@@ -192,7 +192,7 @@ Factor	  → (Bool) | Var | num | true | false
 ```grammar
 Program   → Block
 Block     → { Decls Stmts }
-Decls     → Decl Decls | ε
+Decls     → Decls Decl
 Decl      → Type id;
 Type      → Type[int_num] | Type[real_num] | int | real | bool
 Stmts     → Stmts Stmt | ε
