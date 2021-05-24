@@ -1,0 +1,19 @@
+// 从100开始计数，使用时候坐标记得-100
+string nonTerminatorList[] = {
+    "Program",
+    "Block",
+    "Decls",
+    "Decl",    
+    "Type",    
+    "Stmts",     
+    "Stmt",    
+    "Var",    
+    "Bool",    
+    "Join",    
+    "Equality", 
+    "Rel",
+    "Expr",     
+    "Term",    
+    "Unary",	 
+    "Factor"
+};

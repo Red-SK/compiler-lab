@@ -12,25 +12,6 @@
 using namespace std;
 
 namespace Parser {
-    // 非终结符
-    typedef enum {
-        Program = 0,
-        Block,
-        Decls,
-        Decl,    
-        Type,    
-        Stmts,     
-        Stmt,    
-        Var,    
-        Bool,    
-        Join,    
-        Equality, 
-        Rel,
-        Expr,     
-        Term,    
-        Unary,	 
-        Factor	 
-    } NonTerminator;
 
     // 终结符
     typedef enum {
@@ -69,8 +50,29 @@ namespace Parser {
         sq_right_bracket, // ]
         cir_left_bracket, // (
         cir_right_bracket,// )
-        tokens_end // $
+        eof // $
     } Terminator;
+
+    // 非终结符
+    typedef enum {
+        // 从100开始，便于区别终结符
+        Program = 100,
+        Block,
+        Decls,
+        Decl,    
+        Type,    
+        Stmts,     
+        Stmt,    
+        Var,    
+        Bool,    
+        Join,    
+        Equality, 
+        Rel,
+        Expr,     
+        Term,    
+        Unary,	 
+        Factor	 
+    } NonTerminator;
 
     // 动作
     typedef enum {
@@ -110,7 +112,7 @@ namespace Parser {
 
 // 产生式结构体，左部符号和右部符号串
 struct Production {
-    Parser::NonTerminator left; // 产生式左部
+    int left; // 产生式左部
     vector<int> right;          // 产生式右部
     bool operator==(Production& rhs) const {
         if (left != rhs.left)
@@ -152,8 +154,8 @@ struct CanonicalCollection {
 
 // 文法结构体
 struct Grammar {
-    vector<Parser::Terminator> T;    // 终结符
-    vector<Parser::NonTerminator> N; // 非终结符
+    vector<string> T;    // 终结符
+    vector<string> N; // 非终结符
     vector<Production> prods;        // 产生式
 };
 
@@ -162,5 +164,6 @@ typedef map<Parser::NonTerminator,set<Parser::Terminator>> FIRST;
 // FOLLOW集
 typedef map<Parser::NonTerminator,set<Parser::Terminator>> FOLLOW;
 
+void test4parser();
 
 #endif

@@ -1,0 +1,46 @@
+Program : Block
+Block : { Decls Stmts }
+Decls : Decls Decl
+Decl : Type id ;
+Type : Type [ int_num ]
+Type : Type [ real_num ]
+Type : int
+Type : real
+Type : bool
+Stmts : Stmts Stmt 
+Stmts : ε
+Stmt : Var = Bool ;
+Stmt : if ( Bool ) Stmt
+Stmt : if ( Bool ) Stmt else Stmt
+Stmt : while ( Bool ) Stmt
+Stmt : break ;
+Stmt : Block
+Var : Var [ num ]
+Var : id
+Bool : Bool || Join 
+Bool : Join
+Join : Join && Equality 
+Join : Equality
+Equality : Equality == Rel 
+Equality : Equality != Rel 
+Equality : Rel
+Rel : Expr < Expr 
+Rel : Expr <= Expr 
+Rel : Expr >= Expr 
+Rel : Expr > Expr 
+Rel : Expr
+Expr : Expr + Term 
+Expr : Expr - Term 
+Expr : Term
+Term : Term * Unary 
+Term : Term / Unary 
+Term : Unary
+Unary : ! Unary 
+Unary : - Unary 
+Unary : Factor
+Factor : ( Bool ) 
+Factor : Var 
+Factor : int_num 
+Factor : real_num 
+Factor : true 
+Factor : false
