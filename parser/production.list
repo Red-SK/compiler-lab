@@ -1,6 +1,7 @@
 Program : Block
 Block : { Decls Stmts }
 Decls : Decls Decl
+Decls : ε
 Decl : Type id ;
 Type : Type [ int_num ]
 Type : Type [ real_num ]

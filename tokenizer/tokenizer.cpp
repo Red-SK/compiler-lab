@@ -4,11 +4,14 @@
 #include <sys/stat.h>
 #include <string>
 #include <sstream>
+#include "token.list"
 
-int strStart = 0; 
-int strEnd = 0;
+int strStart = 0; // 全局lex起始符
+int strEnd = 0; // 全局lex终止符
 int curLine = 1; // 起始行
 int totalCharsExceptCur = 0; // 除了当前行，其他行字符数总和
+
+vector<Token> tokens; // 输出的Token集
 
 // 读取文本文件
 string readFile(const char* path) {
@@ -303,4 +306,16 @@ int lexToTokens(string& content, vector<Token>& tokens) {
         }
     }
     return strEnd;
+}
+
+void test4Tokenizer(string contentPath) {
+    lexToTokens(contentPath, tokens);
+    printf("-------------------------\n");
+    printf("|       Tokenizer       |\n");
+    printf("-------------------------\n");
+    for(Token token : tokens) {
+        printf("<@%d:%d: '%s', Line %d, %d:%d, %s>\n",
+                token.start,token.end,token.lex.c_str(),token.curLine,
+                token.curStart,token.curEnd,tokenList[token.type].c_str());
+    }
 }

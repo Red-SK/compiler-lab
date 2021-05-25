@@ -89,7 +89,7 @@ namespace Parser {
  * 
     Program   → Block
     Block     → { Decls Stmts }
-    Decls     → Decls Decl
+    Decls     → Decls Decl | ε
     Decl      → Type id;
     Type      → Type[int_num] | Type[real_num] | int | real | bool
     Stmts     → Stmts Stmt | ε
@@ -114,7 +114,7 @@ namespace Parser {
 struct Production {
     int left; // 产生式左部
     vector<int> right;          // 产生式右部
-    bool operator==(Production& rhs) const {
+    bool operator==(const Production& rhs) {
         if (left != rhs.left)
             return false;
         for (int i = 0; i < right.size(); i++) {
@@ -133,12 +133,39 @@ struct LR1Item {
     // 点的位置
     int location;
     // 向前看符号
-    Parser::Terminator next;
+    int next;
+    bool operator==(const LR1Item& p) {
+        if(location != p.location) return false;
+        if(next != p.next) return false;
+        if(!(production == p.production)) return false;
+        return true;
+    }
+    bool operator<(const LR1Item& p) {
+        if(location != p.location) return true;
+        if(next != p.next) return true;
+        if(!(production == p.production)) return true;
+        return false;
+    }
 };
 
 // LR1项目集
 struct LR1ItemSet {
     vector<LR1Item> items;
+    // 重载不等于
+    bool operator!=(const LR1ItemSet& s) {
+        if(items.size() != s.items.size()) return true;
+        int len = items.size();
+        for(int i = 0; i < len; i++) {
+            bool f = false;
+            for(int j = 0; j < len; j++) {
+                if(items[i] == s.items[j]) {
+                    f = true;
+                }
+            }
+            if(!f) return true;
+        }
+        return false;
+    }
 };
 
 // LR1项目集规范族
@@ -154,16 +181,16 @@ struct CanonicalCollection {
 
 // 文法结构体
 struct Grammar {
-    vector<string> T;    // 终结符
-    vector<string> N; // 非终结符
+    vector<int> T;    // 终结符
+    vector<int> N; // 非终结符
     vector<Production> prods;        // 产生式
 };
 
-// FIRST集
-typedef map<Parser::NonTerminator,set<Parser::Terminator>> FIRST;
-// FOLLOW集
-typedef map<Parser::NonTerminator,set<Parser::Terminator>> FOLLOW;
-
-void test4parser();
+void getNullableSet();
+void getFirstSet();
+void closure(LR1ItemSet& items);
+void DFA();
+void buildPredictTable();
+void test4Parser();
 
 #endif

@@ -89,7 +89,7 @@ make clean
 ```grammar
 Program   → Block
 Block     → { Decls Stmts }
-Decls     → Decls Decl
+Decls     → Decls Decl | ε
 Decl      → Type id;
 Type      → Type[int_num] | Type[real_num] | int | real | bool
 Stmts     → Stmts Stmt | ε
