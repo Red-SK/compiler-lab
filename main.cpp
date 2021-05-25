@@ -1,4 +1,5 @@
 #include "tokenizer.h"
+#include "parser.h"
 #include <iostream>
 #include <vector>
 #include <cstdio>
@@ -19,6 +20,7 @@ int main(int argc, char** argv) {
     }
     lexToTokens(contentPath, tokens);
     testTokenizer();
+    test4parser();
     return 0;
 }
 

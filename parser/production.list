@@ -15,7 +15,8 @@ Stmt : if ( Bool ) Stmt else Stmt
 Stmt : while ( Bool ) Stmt
 Stmt : break ;
 Stmt : Block
-Var : Var [ num ]
+Var : Var [ int_num ]
+Var : Var [ real_num ]
 Var : id
 Bool : Bool || Join 
 Bool : Join
