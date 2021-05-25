@@ -116,6 +116,9 @@ static void initGrammar() {
 
 // 测试输出用
 void test4parser() {
+    printf("-------------------------\n");
+    printf("|         Parser         |\n");
+    printf("-------------------------\n");
     initGrammar();
     int num = grammar.prods.size();
     for(int i = 0;i<num;i++) {
