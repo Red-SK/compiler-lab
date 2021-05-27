@@ -2,6 +2,7 @@
 
 # 编译文件
 *.o
+*.out
 main
 
 # vscode配置文件

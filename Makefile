@@ -1,6 +1,6 @@
 CC = g++
 TARGET = main
-CFLAGS = -I tokenizer -I util -I parser -I ./  
+CFLAGS = -I tokenizer -I util -I parser -I ./ -O2
 DIRS = tokenizer util parser ./  
 CFILES = $(foreach dir, $(DIRS),$(wildcard $(dir)/*.cpp))
 OBJS = $(patsubst %.cpp,%.o,$(CFILES)) 

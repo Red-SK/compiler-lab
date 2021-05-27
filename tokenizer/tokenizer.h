@@ -42,7 +42,8 @@ typedef enum {
     SQ_LEFT_BRACKET, // [
     SQ_RIGHT_BRACKET, // ]
     CIR_LEFT_BRACKET, // (
-    CIR_RIGHT_BRACKET // )
+    CIR_RIGHT_BRACKET, // )
+    END_OF_STRING // $, 给语法分析器用的
 } TokenType;
 
 struct Token {

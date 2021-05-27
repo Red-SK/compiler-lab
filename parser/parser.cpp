@@ -7,6 +7,9 @@
 #include "terminator.list"
 #include "non_terminator.list"
 
+// 导入外部的Tokens
+extern vector<Token> tokens;
+
 CanonicalCollection CC; // LR1项目集规范族
 Grammar grammar; // 文法
 
@@ -15,14 +18,16 @@ map<int,set<int>> firstSet;
 // NULLABLE集（可能会推导出ε的非终结符）
 set<int> nullableSet;
 
-/* DFA队列， 用于存储待转移的有效项目集 */
+// DFA队列,用于存储待转移的有效项目集
 queue<pair<LR1ItemSet,int>> shiftQueue;
 
-/* action表和goto表 */
-pair<int,int> ACTION[100][100]; // first是分析动作，second是转移状态或者产生式序号
-int GOTO[100][100]; 
+// action表和goto表
+// 行是项目集序号
+// 列是终结符 or 非终结符编号
+pair<int,int> ACTION[1000][100]; // first是分析动作，second是转移状态或者产生式序号
+int GOTO[1000][100]; 
 
-/* 分析栈 */
+// 分析栈
 stack<pair<int,int>> aStack ; // first是状态，second是符号
 
 // 找到终结符字符串对应的枚举值
@@ -112,17 +117,20 @@ static void initGrammar() {
     }
     // 载入非终结符（需要偏移）
     for(int i = Parser::Program;i<=Parser::Factor;i++) {
-        grammar.N.push_back(i-100);
+        grammar.N.push_back(i);
     }
     // 载入产生式
     loadProduction("./parser/production.list");
     // 求NULLABLE集和FIRST集
     getNullableSet();
     getFirstSet();
+    cout << "Finish computing NullableSet & FirstSet!" << endl;
     // 构建DFA
     DFA();
+    cout << "Finish building DFA!" << endl;
     // 构建预测分析表
     buildPredictTable();
+    cout << "Finish building PredictTable!" << endl;
 }
 
 // 判断产生式右部是否全是非终结符
@@ -199,6 +207,35 @@ void getFirstSet() {
     } while(last != firstSet);
 }
 
+// 获取 · 后的非终结符之后的first集
+static set<int>* getFirstSetAfterSymbol(LR1Item& item) {
+    set<int> *first = new set<int>;
+    // 模拟吃了一个符号
+    int loc = item.location + 1;
+    int size = item.production.right.size();
+    while(loc < size) {
+        int symbol = item.production.right[loc];
+        // 终结符 直接是first
+        if(isTerminator(symbol)) {
+            first->insert(symbol);
+            return first;
+        } else {
+            set<int> s = firstSet[symbol];
+            for(int i : s) {
+                // 插入不为空的
+                if(i != Parser::epsilon) first->insert(i);
+            }
+            // 该非终结符不在nullable内
+            if(nullableSet.find(symbol) == nullableSet.end()) {
+                return first;
+            }
+            loc++;
+        }
+    }
+    first->insert(item.next);
+    return first;
+}
+
 // 获取产生式左部为symbol的项目集
 // symbol: 上一个式子·后的非终结符
 // first: symbol后的符号求出来的first集
@@ -219,32 +256,7 @@ static vector<LR1Item>* getItemsByN(int symbol, set<int>& first) {
     return items;
 }
 
-// 获取 · 后的非终结符之后的first集
-static set<int>* getFirstSetAfterSymbol(LR1Item& item) {
-    set<int> *first = new set<int>;
-    // 模拟吃了一个符号
-    int loc = item.location + 1;
-    int size = item.production.right.size();
-    while(loc < size) {
-        int symbol = item.production.right[loc];
-        // 终结符 直接是first
-        if(isTerminator(symbol)) {
-            first->insert(symbol);
-            return first;
-        } else {
-            set<int> s = firstSet[symbol];
-            for(int i : s) {
-                first->insert(i);
-            }
-            // 该非终结符不在nullable内
-            if(nullableSet.find(symbol) == nullableSet.end()) return first;                
-            loc++;
-        }
-    }
-    first->insert(item.next);
-    return first;
-}
-
+// 判断两个项目集是否相同（用来判断项目集是否变化）
 static bool isLR1ItemSetEqual(LR1ItemSet& s1, LR1ItemSet& s2) {
     if(s1.items.size() != s2.items.size()) return false;
     int len = s1.items.size();
@@ -261,31 +273,49 @@ static bool isLR1ItemSetEqual(LR1ItemSet& s1, LR1ItemSet& s2) {
     return true;
 }
 
-static void printLR1ItemSet(LR1ItemSet& s) {
+// 打印项目
+static void printLR1Item(LR1Item& item) {
+    cout << nonTerminatorList[item.production.left-100] << " -> ";
+    int rsize = item.production.right.size();
+    for(int i = 0; i < rsize; i++) {
+        if(item.location == i) cout << "· ";
+        if(isTerminator(item.production.right[i]) &&
+           item.production.right[i] != Parser::epsilon)
+            cout << terminatorList[item.production.right[i]] << " ";
+        else
+            cout << nonTerminatorList[item.production.right[i]-100] << " ";
+    }
+    if(item.location == item.production.right.size()) {
+        cout << "· ";
+    }
+    cout << ", " << terminatorList[item.next] << endl;
+}
+
+// 打印项目集
+static void printLR1ItemSet(vector<LR1Item>& items) {
     cout << "-----------------------" << endl;
-    for(auto& item : s.items) {
-        cout << nonTerminatorList[item.production.left-100] << " -> ";
-        int rsize = item.production.right.size();
-        for(int i = 0; i < rsize; i++) {
-            if(item.location == i) cout << "· ";
-            if(isTerminator(item.production.right[i]))
-                cout << terminatorList[item.production.right[i]] << " ";
-            else
-                cout << nonTerminatorList[item.production.right[i]-100] << " ";
-        }
-        cout << ", " << terminatorList[item.next] << endl;
+    for(auto& item : items) {
+        printLR1Item(item);
     }
     cout << "-----------------------" << endl;
 }
 
-// FIXME:求项目集闭包
+// 判断项目是否在项目集内
+static bool isItemInItemSets(LR1Item& item, vector<LR1Item>& items) {
+    for(auto& it : items) {
+        if(it == item) return true;
+    }
+    return false;
+}
+
+// 求项目集闭包
 void closure(LR1ItemSet& s) {
     LR1ItemSet last;
     int cnt = 0;
     do {
         last = s;
-        //printLR1ItemSet(last);
-        for(int i = cnt; i < s.items.size(); i++) {
+        int size = s.items.size();
+        for(int i = cnt; i < size; i++) {
             LR1Item item = s.items[i];
             // 移进 or 待约
             if(item.location < item.production.right.size()) {
@@ -297,7 +327,13 @@ void closure(LR1ItemSet& s) {
                     vector<LR1Item> *newItems = getItemsByN(symbol,*first);
                     // 插入新的项目
                     for(auto& it : *newItems) {
-                        s.items.push_back(it);
+                        // 确保没有才插入
+                        if(!isItemInItemSets(it,s.items)) {
+                            // cout << "insert: ";
+                            // printLR1Item(it);
+                            // printLR1ItemSet(s.items);
+                            s.items.push_back(it);
+                        }                         
                     }
                 }
             }
@@ -307,7 +343,35 @@ void closure(LR1ItemSet& s) {
     } while(!isLR1ItemSetEqual(last,s));
 }
 
-// TODO: 构建DFA
+// 吃入一个字符，到达一个新状态
+void go(LR1ItemSet& src, int symbol, LR1ItemSet& dst) {
+    // 找到 · 后字符为symbol的项目
+    for(auto& item : src.items) {
+        if(item.location < item.production.right.size() &&
+           item.production.right[item.location] == symbol &&
+           item.production.right[0] != Parser::epsilon) {
+            LR1Item newItem = item;
+            newItem.location++;
+            dst.items.push_back(newItem);
+            //printLR1ItemSet(dst.items);
+        }
+    }
+    // 求新的项目集的闭包
+    closure(dst);
+}
+
+// 判断是否在项目集规范族中，若在返回序号
+bool isInCanonicalCollection(LR1ItemSet& is) {
+    for (int i = 0; i < CC.itemSets.size(); i++) {
+        if(isLR1ItemSetEqual(is, CC.itemSets[i])) {
+            return true;
+        }
+    }
+    // 不存在
+    return false;
+}
+
+// 构建DFA和项目集规范族
 void DFA() {
     // 构建初始项目集
     LR1Item startItem;
@@ -319,11 +383,245 @@ void DFA() {
     closure(I0);
     // 加入初始有效项目集
     CC.itemSets.push_back(I0);
+    // 把新加入的有效项目集加入待扩展队列中
+    shiftQueue.push(pair<LR1ItemSet, int>(I0, 0));
+    while(!shiftQueue.empty()) {
+        // 取出队首元素
+        LR1ItemSet& src = shiftQueue.front().first;
+        int srcIndex = shiftQueue.front().second;
+        // 遍历每个终结符
+        for(int i = 0; i < grammar.T.size(); i++) {
+            LR1ItemSet nextSet;
+            go(src,grammar.T[i],nextSet);
+            // 如果有新的项目
+            if(nextSet.items.size() > 0 && !isInCanonicalCollection(nextSet)) {
+                int index = CC.itemSets.size();
+                CC.itemSets.push_back(nextSet);
+                // 把新加入的有效项目集加入待扩展队列中
+                shiftQueue.push(pair<LR1ItemSet, int>(nextSet, index));
+                // srcIndex，吃了grammar.T[i]，到达index
+                CC.g[srcIndex].push_back(pair<int, int>(grammar.T[i], index));
+            }
+        }
+        // 遍历每个非终结符
+        for(int i = 0; i < grammar.N.size(); i++) {
+            LR1ItemSet nextSet;
+            go(src,grammar.N[i],nextSet);          
+            // 如果有新的项目
+            if(nextSet.items.size() > 0 && !isInCanonicalCollection(nextSet)) {
+                int index = CC.itemSets.size();
+                CC.itemSets.push_back(nextSet);
+                // 把新加入的有效项目集加入待扩展队列中
+                shiftQueue.push(pair<LR1ItemSet, int>(nextSet, index));
+                // srcIndex，吃了grammar.N[i]，到达index
+                CC.g[srcIndex].push_back(pair<int, int>(grammar.N[i], index));
+            }
+        }
+        shiftQueue.pop();
+    }
 }
 
-// TODO: 构建预测分析表
-void buildPredictTable() {
+// 初始化ACTION表和GOTO表
+static void initPredictTable() {
+    int cSize = CC.itemSets.size();
+    for(int i = 0; i < cSize; i++) {
+        for(int j = 1; j <= Parser::eof; j++) {
+            ACTION[i][j] = make_pair(Parser::Error,-1);
+        }
+        for(int j = Parser::Block; j <= Parser::Factor; j++) {
+            GOTO[i][j-100] = -1;
+        }
+    }
+}
 
+// 构建预测分析表
+void buildPredictTable() {
+    initPredictTable();
+    int cSize = CC.itemSets.size();
+    // 遍历每一个项目集
+    for(int i = 0; i < cSize; i++) {
+        LR1ItemSet& items = CC.itemSets[i];
+        // 构建ACTION表
+        for(auto& item : items.items) {
+            int symbol = item.production.right[item.location];
+            // 移进 or 待约项
+            // 形如 A -> ε 的，直接规约就行
+            if(item.location < item.production.right.size()
+            || item.production.right[0] != Parser::epsilon) {
+                // ACTION表只有终结符
+                if(isTerminator(symbol)) {
+                    for(int j = 0; j < CC.g[i].size(); j++) {
+                        pair<int, int> p = CC.g[i][j];
+                        if (p.first == symbol) {
+                            // 在吃入的symbol位置填入S_p.second
+                            // 代表吃入symbol，跳到I_p.second
+                            ACTION[i][symbol].first = Parser::Shift;
+                            ACTION[i][symbol].second = p.second;
+                            break;
+                        }
+                    }
+                }
+            }
+            // 规约项
+            else {
+                // Accept项
+                if(item.production.left == grammar.prods[0].left
+                   && item.next == Parser::eof) {
+                    ACTION[i][symbol] = make_pair(Parser::Accept, 0);
+                } else {
+                    if(isTerminator(symbol)) {                       
+                        for(int j = 0; j < grammar.prods.size(); j++) {
+                            if(item.production == grammar.prods[j]) {
+                                ACTION[i][symbol].first = Parser::Reduce;
+                                // 在吃入的symbol位置填入Rj
+                                // 代表第j个产生式的规约动作
+                                ACTION[i][symbol].second = j;
+                                break;
+                            }
+                        }                      
+                    }
+                }
+            }
+        }
+        // 构建GOTO表
+        for (int k = 0; k < CC.g[i].size(); k++) {
+            pair<int, int> p = CC.g[i][k];
+            int symbol = p.first;
+            // GOTO表都是非终结符
+            if(!isTerminator(symbol)) {
+                // 非终结符从100开始枚举，这里要减掉
+                GOTO[i][symbol-100] = p.second;
+            }
+        }
+    }
+}
+
+// 打印DFA所有项目集
+static void printDFA() {
+    for (int i = 0; i < CC.itemSets.size(); i++) {
+        printf("LR1ItemSet %d:\n", i);
+        printLR1ItemSet(CC.itemSets[i].items);
+        for (int j = 0; j < CC.g[i].size(); j++) {
+            pair<int, int> p= CC.g[i][j];
+            if(isTerminator(p.first)) {
+                printf("eat %s to LR1ItemSet %d\n", terminatorList[p.first].c_str(), p.second);
+            } else {
+                printf("eat %s to LR1ItemSet %d\n", nonTerminatorList[p.first-100].c_str(), p.second);
+            }      
+        }     
+    }
+}
+
+// 传入产生式索引，打印产生式
+static void printProduction(int i) {
+    cout << i << ": " << nonTerminatorList[grammar.prods[i].left-100] << " ->";
+    int len = grammar.prods[i].right.size();
+    for(int j=0;j<len; j++) {
+        int right = grammar.prods[i].right[j];
+        if(isTerminator(right)) 
+            cout << " " << terminatorList[right];
+        else
+            cout << " " << nonTerminatorList[right-100];
+    }
+    cout << endl;
+}
+
+// FIXME: 打印预测表
+static void printPredictTable() {
+    for (int i = 0; i < grammar.T.size() / 2; i++)
+        printf("\t");
+    printf("ACTION");
+    for (int i = 0; i < grammar.N.size() / 2 + grammar.T.size() / 2 + 1; i++)
+        printf("\t");
+    printf("GOTO\n");
+    printf("\t");
+    for (int i = 1; i  < grammar.T.size(); i++) {
+        printf("%s\t", terminatorList[grammar.T[i]].c_str());
+    }
+    printf("|\t");
+    for (int i = 1; i  < grammar.N.size(); i++) {
+        printf("%s\t", nonTerminatorList[grammar.N[i]-100].c_str());
+    }
+    printf("\n");
+    for (int i = 0; i < CC.itemSets.size(); i++) {
+        printf("%d\t", i);
+        for (int j = 1; j < grammar.T.size(); j++) {
+            if (ACTION[i][j].first == Parser::Shift) {
+                printf("S%d\t", ACTION[i][j].second);
+            } else if (ACTION[i][j].first == Parser::Reduce) {
+                printf("R%d\t", ACTION[i][j].second);
+            } else if (ACTION[i][j].first == Parser::Accept) {
+                printf("ACC\t");
+            } else {
+                printf("\t");
+            }
+        }
+        printf("|\t");
+        for (int j = 1; j < grammar.N.size(); j++) {
+            if (GOTO[i][j]) {
+                printf("%d\t", GOTO[i][j]);
+            } else {
+                printf("\t");
+            }
+            
+        }
+        printf("\n");
+    }
+}
+
+// 语法分析（使用分析栈）
+void syntaxParser() {
+    cout << "Start Parsing ..." << endl;
+    Token end;
+    end.type = END_OF_STRING;
+    end.curEnd = end.curLine = end.curStart = end.end = end.start = -1;
+    end.lex = "$";
+    tokens.push_back(end);
+    aStack.push(pair<int,int>(0, Parser::eof));
+    // 开始分析
+    int ip = 0;
+    while(1) {
+        int topState = aStack.top().first;
+        Token& curToken = tokens[ip];
+        int symbol = curToken.type;
+        // 移进
+        if (ACTION[topState][symbol].first == Parser::Shift) {
+            aStack.push(pair<int, int>(ACTION[topState][symbol].second, symbol));
+            printf("Shift %s\n", terminatorList[symbol].c_str());
+            ip++;
+        } 
+        // 规约
+        else if (ACTION[topState][symbol].first == Parser::Reduce) { 
+            int rIndex = ACTION[topState][symbol].second;
+            Production& P = grammar.prods[rIndex];
+            // 弹出产生式(除了A -> ε)
+            if(P.right[0] != Parser::epsilon) {
+                for (int i = 0; i < P.right.size(); i++) {
+                    aStack.pop();
+                }
+            }
+            printf("Reduce %d: ",rIndex);
+            printProduction(rIndex);
+            topState = aStack.top().first;
+            int N = P.left;
+            aStack.push(pair<int, int>(GOTO[topState][N-100], N));
+        } 
+        // 接受
+        else if (ACTION[topState][symbol].first == Parser::Accept) {
+            printf("Ohhhhhhhhhhhhhh!!!!!!!!!!!\n");
+            printf("ACCEPT!!!!!!!!!!!\n");
+            return;
+        } 
+        // 错误
+        else {
+            printf("Syntax Error!\n");
+            printf("Please check '%s' at %d:%d.\n",
+                    curToken.lex.c_str(),
+                    curToken.curLine, 
+                    curToken.curStart);
+            return;
+        }        
+    }
 }
 
 // 测试输出用
@@ -334,16 +632,7 @@ void test4Parser() {
     initGrammar();
     int num = grammar.prods.size();
     for(int i = 0;i<num;i++) {
-        cout << i << ": " << nonTerminatorList[grammar.prods[i].left-100] << " ->";
-        int len = grammar.prods[i].right.size();
-        for(int j=0;j<len; j++) {
-            int right = grammar.prods[i].right[j];
-            if(isTerminator(right)) 
-                cout << " " << terminatorList[right];
-            else
-                cout << " " << nonTerminatorList[right-100];
-        }
-        cout << endl;
+        printProduction(i);
     }
     cout << "Nullable: { ";
     for(auto i : nullableSet) {
@@ -366,6 +655,7 @@ void test4Parser() {
         }
         printf("}\n");
     }
-    LR1ItemSet I0 = CC.itemSets[0];
-    printLR1ItemSet(I0);
+    printf("Finish building the DFA!\nCC size: %ld\n", CC.itemSets.size());
+    // printPredictTable();
+    syntaxParser();
 }

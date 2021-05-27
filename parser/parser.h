@@ -78,7 +78,8 @@ namespace Parser {
     typedef enum {
         Accept = 0, // 接受
         Shift, // 移进
-        Reduce // 规约
+        Reduce, // 规约
+        Error // 错误，拒绝
     } Action;
 }
 
@@ -117,9 +118,9 @@ struct Production {
     bool operator==(const Production& rhs) {
         if (left != rhs.left)
             return false;
+        if(rhs.right.size() != right.size())
+            return false;
         for (int i = 0; i < right.size(); i++) {
-            if (i >= rhs.right.size())
-                return false;
             if (right[i] != rhs.right[i])
                 return false;
         }
@@ -174,9 +175,9 @@ struct CanonicalCollection {
     vector<LR1ItemSet> itemSets;
     // 保存DFA的图
     // []为当前状态序号
-    // first为转移到的状态序号
-    // second是经什么转移（即吃掉的符号）
-    vector<pair<int,int>> g[100];
+    // first是经什么转移（即吃掉的符号）
+    // second为转移到的状态序号
+    vector<pair<int,int>> g[1000];
 };
 
 // 文法结构体
@@ -189,8 +190,10 @@ struct Grammar {
 void getNullableSet();
 void getFirstSet();
 void closure(LR1ItemSet& items);
+void go(LR1ItemSet& src, int symbol, LR1ItemSet& dst);
 void DFA();
 void buildPredictTable();
+void syntaxParser();
 void test4Parser();
 
 #endif
