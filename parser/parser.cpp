@@ -361,14 +361,14 @@ void go(LR1ItemSet& src, int symbol, LR1ItemSet& dst) {
 }
 
 // 判断是否在项目集规范族中，若在返回序号
-bool isInCanonicalCollection(LR1ItemSet& is) {
+int isInCanonicalCollection(LR1ItemSet& is) {
     for (int i = 0; i < CC.itemSets.size(); i++) {
         if(isLR1ItemSetEqual(is, CC.itemSets[i])) {
-            return true;
+            return i;
         }
     }
     // 不存在
-    return false;
+    return -1;
 }
 
 // 构建DFA和项目集规范族
@@ -393,29 +393,39 @@ void DFA() {
         for(int i = 0; i < grammar.T.size(); i++) {
             LR1ItemSet nextSet;
             go(src,grammar.T[i],nextSet);
-            // 如果有新的项目
-            if(nextSet.items.size() > 0 && !isInCanonicalCollection(nextSet)) {
-                int index = CC.itemSets.size();
-                CC.itemSets.push_back(nextSet);
-                // 把新加入的有效项目集加入待扩展队列中
-                shiftQueue.push(pair<LR1ItemSet, int>(nextSet, index));
-                // srcIndex，吃了grammar.T[i]，到达index
-                CC.g[srcIndex].push_back(pair<int, int>(grammar.T[i], index));
+            if(nextSet.items.size() > 0) {
+                int pos = isInCanonicalCollection(nextSet);
+                // 如果有新的项目集
+                if(pos == -1) {
+                    int index = CC.itemSets.size();
+                    CC.itemSets.push_back(nextSet);
+                    // 把新加入的有效项目集加入待扩展队列中
+                    shiftQueue.push(pair<LR1ItemSet, int>(nextSet, index));
+                    // srcIndex，吃了grammar.T[i]，到达index
+                    CC.g[srcIndex].push_back(pair<int, int>(grammar.T[i], index));
+                } else { // 原有的项目集
+                    CC.g[srcIndex].push_back(pair<int, int>(grammar.T[i], pos));
+                }            
             }
         }
         // 遍历每个非终结符
         for(int i = 0; i < grammar.N.size(); i++) {
             LR1ItemSet nextSet;
-            go(src,grammar.N[i],nextSet);          
-            // 如果有新的项目
-            if(nextSet.items.size() > 0 && !isInCanonicalCollection(nextSet)) {
-                int index = CC.itemSets.size();
-                CC.itemSets.push_back(nextSet);
-                // 把新加入的有效项目集加入待扩展队列中
-                shiftQueue.push(pair<LR1ItemSet, int>(nextSet, index));
-                // srcIndex，吃了grammar.N[i]，到达index
-                CC.g[srcIndex].push_back(pair<int, int>(grammar.N[i], index));
-            }
+            go(src,grammar.N[i],nextSet); 
+            if(nextSet.items.size() > 0) {
+                int pos = isInCanonicalCollection(nextSet);
+                // 如果有新的项目集
+                if(pos == -1) {
+                    int index = CC.itemSets.size();
+                    CC.itemSets.push_back(nextSet);
+                    // 把新加入的有效项目集加入待扩展队列中
+                    shiftQueue.push(pair<LR1ItemSet, int>(nextSet, index));
+                    // srcIndex，吃了grammar.T[i]，到达index
+                    CC.g[srcIndex].push_back(pair<int, int>(grammar.N[i], index));
+                } else { // 原有的项目集
+                    CC.g[srcIndex].push_back(pair<int, int>(grammar.N[i], pos));
+                }            
+            }         
         }
         shiftQueue.pop();
     }
@@ -425,10 +435,10 @@ void DFA() {
 static void initPredictTable() {
     int cSize = CC.itemSets.size();
     for(int i = 0; i < cSize; i++) {
-        for(int j = 1; j <= Parser::eof; j++) {
+        for(int j = 0; j <= Parser::eof; j++) {
             ACTION[i][j] = make_pair(Parser::Error,-1);
         }
-        for(int j = Parser::Block; j <= Parser::Factor; j++) {
+        for(int j = Parser::Program; j <= Parser::Factor; j++) {
             GOTO[i][j-100] = -1;
         }
     }
@@ -447,7 +457,7 @@ void buildPredictTable() {
             // 移进 or 待约项
             // 形如 A -> ε 的，直接规约就行
             if(item.location < item.production.right.size()
-            || item.production.right[0] != Parser::epsilon) {
+            && item.production.right[0] != Parser::epsilon) {
                 // ACTION表只有终结符
                 if(isTerminator(symbol)) {
                     for(int j = 0; j < CC.g[i].size(); j++) {
@@ -467,19 +477,17 @@ void buildPredictTable() {
                 // Accept项
                 if(item.production.left == grammar.prods[0].left
                    && item.next == Parser::eof) {
-                    ACTION[i][symbol] = make_pair(Parser::Accept, 0);
-                } else {
-                    if(isTerminator(symbol)) {                       
-                        for(int j = 0; j < grammar.prods.size(); j++) {
-                            if(item.production == grammar.prods[j]) {
-                                ACTION[i][symbol].first = Parser::Reduce;
-                                // 在吃入的symbol位置填入Rj
-                                // 代表第j个产生式的规约动作
-                                ACTION[i][symbol].second = j;
-                                break;
-                            }
-                        }                      
-                    }
+                    ACTION[i][item.next] = make_pair(Parser::Accept, 0);
+                } else {                   
+                    for(int j = 0; j < grammar.prods.size(); j++) {
+                        if(item.production == grammar.prods[j]) {
+                            ACTION[i][item.next].first = Parser::Reduce;
+                            // 在吃入的展望符位置填入Rj
+                            // 代表第j个产生式的规约动作
+                            ACTION[i][item.next].second = j;
+                            break;
+                        }
+                    }                                       
                 }
             }
         }
@@ -569,9 +577,32 @@ static void printPredictTable() {
     }
 }
 
+// 打印ACTION表的row状态行
+static void printACTIONRow(int row) {
+    printf("I%d:\n",row);
+    int ac;
+    for(int i = 0; i < grammar.T.size(); i++) {
+        ac = ACTION[row][i].first;
+        switch(ac) {
+            case Parser::Accept:
+                printf("%s\tAcc\t\n",terminatorList[grammar.T[i]].c_str());
+                break;
+            case Parser::Shift:
+                printf("%s\tS%d\t\n",terminatorList[grammar.T[i]].c_str(),ACTION[row][i].second);
+                break;
+            case Parser::Reduce:
+                printf("%s\tR%d\t\n",terminatorList[grammar.T[i]].c_str(),ACTION[row][i].second);
+                break;
+            case Parser::Error:
+                printf("%s\tErr\t\n",terminatorList[grammar.T[i]].c_str());
+                break;
+        }
+    }
+}
+
 // 语法分析（使用分析栈）
 void syntaxParser() {
-    cout << "Start Parsing ..." << endl;
+    cout << "Start Parsing..." << endl;
     Token end;
     end.type = END_OF_STRING;
     end.curEnd = end.curLine = end.curStart = end.end = end.start = -1;
@@ -580,14 +611,18 @@ void syntaxParser() {
     aStack.push(pair<int,int>(0, Parser::eof));
     // 开始分析
     int ip = 0;
+    int step = 1;
     while(1) {
         int topState = aStack.top().first;
         Token& curToken = tokens[ip];
         int symbol = curToken.type;
+        cout << ACTION[topState][symbol].first << " " << ACTION[topState][symbol].second << endl;
+        printLR1ItemSet(CC.itemSets[topState].items);
+        printACTIONRow(topState);
         // 移进
         if (ACTION[topState][symbol].first == Parser::Shift) {
             aStack.push(pair<int, int>(ACTION[topState][symbol].second, symbol));
-            printf("Shift %s\n", terminatorList[symbol].c_str());
+            printf("%d Shift %s\n", step++, terminatorList[symbol].c_str());
             ip++;
         } 
         // 规约
@@ -600,7 +635,7 @@ void syntaxParser() {
                     aStack.pop();
                 }
             }
-            printf("Reduce %d: ",rIndex);
+            printf("%d Reduce %d: ", step++, rIndex);
             printProduction(rIndex);
             topState = aStack.top().first;
             int N = P.left;
@@ -608,17 +643,24 @@ void syntaxParser() {
         } 
         // 接受
         else if (ACTION[topState][symbol].first == Parser::Accept) {
-            printf("Ohhhhhhhhhhhhhh!!!!!!!!!!!\n");
-            printf("ACCEPT!!!!!!!!!!!\n");
+            printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+            printf("Ohhhhhhhhhhhhhh!!!!!!!!!!!!!!\n");
+            printf("ACCEPT!!!!!!!!!!!!!!!!!!!!!!!\n");
+            printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");           
             return;
         } 
         // 错误
         else {
+            printf("*****************************\n");  
             printf("Syntax Error!\n");
             printf("Please check '%s' at %d:%d.\n",
                     curToken.lex.c_str(),
                     curToken.curLine, 
                     curToken.curStart);
+            printf("The ACTION is %d, STATE is %d\n",
+                    ACTION[topState][symbol].first,
+                    ACTION[topState][symbol].second);
+            printf("*****************************\n"); 
             return;
         }        
     }
