@@ -602,7 +602,9 @@ static void printACTIONRow(int row) {
 
 // 语法分析（使用分析栈）
 void syntaxParser() {
+    cout << "================" << endl;
     cout << "Start Parsing..." << endl;
+    cout << "================" << endl;
     Token end;
     end.type = END_OF_STRING;
     end.curEnd = end.curLine = end.curStart = end.end = end.start = -1;
@@ -616,9 +618,9 @@ void syntaxParser() {
         int topState = aStack.top().first;
         Token& curToken = tokens[ip];
         int symbol = curToken.type;
-        cout << ACTION[topState][symbol].first << " " << ACTION[topState][symbol].second << endl;
-        printLR1ItemSet(CC.itemSets[topState].items);
-        printACTIONRow(topState);
+        //cout << ACTION[topState][symbol].first << " " << ACTION[topState][symbol].second << endl;
+        //printLR1ItemSet(CC.itemSets[topState].items);
+        //printACTIONRow(topState);
         // 移进
         if (ACTION[topState][symbol].first == Parser::Shift) {
             aStack.push(pair<int, int>(ACTION[topState][symbol].second, symbol));
@@ -635,7 +637,7 @@ void syntaxParser() {
                     aStack.pop();
                 }
             }
-            printf("%d Reduce %d: ", step++, rIndex);
+            printf("%d Reduce ", step++);
             printProduction(rIndex);
             topState = aStack.top().first;
             int N = P.left;
@@ -697,7 +699,7 @@ void test4Parser() {
         }
         printf("}\n");
     }
-    printf("Finish building the DFA!\nCC size: %ld\n", CC.itemSets.size());
+    printf("Finish building the DFA!\nDFA's size: %ld\n", CC.itemSets.size());
     // printPredictTable();
     syntaxParser();
 }

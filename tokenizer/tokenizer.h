@@ -59,6 +59,6 @@ struct Token {
 string readFile(const char* path); // 读取文本文件
 Token* makeToken(string str, TokenType type); // 字符串转Token
 int lexToTokens(string& content, vector<Token>& tokens); // lex转tokens
-void test4Tokenizer(string contentPath); // 测试输出
+bool test4Tokenizer(string contentPath); // 测试输出
 
 #endif

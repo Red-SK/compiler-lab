@@ -17,8 +17,9 @@ int main(int argc, char** argv) {
     } else {
         contentPath = readFile(argv[1]); 
     }
-    test4Tokenizer(contentPath);
-    test4Parser();
+    if( test4Tokenizer(contentPath) ) {
+        test4Parser();
+    } 
     gettimeofday(&end,NULL);
     printf("cost time : %ld ms\n",(end.tv_sec-start.tv_sec)*1000 + (end.tv_usec-start.tv_usec)/1000);
     return 0;

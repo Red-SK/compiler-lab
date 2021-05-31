@@ -162,7 +162,7 @@ int lexToTokens(string& content, vector<Token>& tokens) {
                 tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),AND));                
                 strStart = ++strEnd;
             } else {
-
+                ;
             }
         }
         else if(content[strStart] == '|') {
@@ -171,7 +171,7 @@ int lexToTokens(string& content, vector<Token>& tokens) {
                 tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),OR));                
                 strStart = ++strEnd;
             } else {
-                
+                ;
             }
         }
         else if(content[strStart] == ';') {
@@ -210,7 +210,7 @@ int lexToTokens(string& content, vector<Token>& tokens) {
                     tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),BREAK));
                 }
                 else {
-                    while(isCharacter(content[strEnd+1]) || content[strEnd+1] == '_') strEnd++;                      
+                    while(isCharacter(content[strEnd+1]) || content[strEnd+1] == '_' || isDigit(content[strEnd+1])) strEnd++;                      
                     tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),ID));
                 }
             }
@@ -227,7 +227,7 @@ int lexToTokens(string& content, vector<Token>& tokens) {
                     tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),IF));
                 }
                 else {
-                    while(isCharacter(content[strEnd+1]) || content[strEnd+1] == '_') strEnd++;   
+                    while(isCharacter(content[strEnd+1]) || content[strEnd+1] == '_' || isDigit(content[strEnd+1])) strEnd++;   
                     tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),ID));
                 }
             }
@@ -238,7 +238,7 @@ int lexToTokens(string& content, vector<Token>& tokens) {
                     tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),ELSE));
                 }
                 else {
-                    while(isCharacter(content[strEnd+1]) || content[strEnd+1] == '_') strEnd++;   
+                    while(isCharacter(content[strEnd+1]) || content[strEnd+1] == '_' || isDigit(content[strEnd+1])) strEnd++;   
                     tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),ID));
                 }
             }
@@ -250,7 +250,7 @@ int lexToTokens(string& content, vector<Token>& tokens) {
                     tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),FALSE));
                 }
                 else {
-                    while(isCharacter(content[strEnd+1]) || content[strEnd+1] == '_') strEnd++;   
+                    while(isCharacter(content[strEnd+1]) || content[strEnd+1] == '_' || isDigit(content[strEnd+1])) strEnd++;   
                     tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),ID));
                 }
             }
@@ -262,12 +262,12 @@ int lexToTokens(string& content, vector<Token>& tokens) {
                         tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),REAL));
                     }
                     else {
-                        while(isCharacter(content[strEnd+1]) || content[strEnd+1] == '_') strEnd++;    
+                        while(isCharacter(content[strEnd+1]) || content[strEnd+1] == '_' || isDigit(content[strEnd+1])) strEnd++;    
                         tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),ID));
                     }
                 }
                 else {
-                    while(isCharacter(content[strEnd+1]) || content[strEnd+1] == '_') strEnd++;    
+                    while(isCharacter(content[strEnd+1]) || content[strEnd+1] == '_' || isDigit(content[strEnd+1])) strEnd++;    
                     tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),ID));
                 }
             }
@@ -278,7 +278,7 @@ int lexToTokens(string& content, vector<Token>& tokens) {
                     tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),TRUE));
                 }
                 else {
-                    while(isCharacter(content[strEnd+1]) || content[strEnd+1] == '_') strEnd++;    
+                    while(isCharacter(content[strEnd+1]) || content[strEnd+1] == '_' || isDigit(content[strEnd+1])) strEnd++;    
                     tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),ID));
                 }
             }
@@ -290,12 +290,12 @@ int lexToTokens(string& content, vector<Token>& tokens) {
                     tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),WHILE));
                 }
                 else {
-                    while(isCharacter(content[strEnd+1]) || content[strEnd+1] == '_') strEnd++;    
+                    while(isCharacter(content[strEnd+1]) || content[strEnd+1] == '_' || isDigit(content[strEnd+1])) strEnd++;    
                     tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),ID));
                 }
             }
             else {
-                while(isCharacter(content[strEnd+1]) || content[strEnd+1] == '_') strEnd++;     
+                while(isCharacter(content[strEnd+1]) || content[strEnd+1] == '_' || isDigit(content[strEnd+1])) strEnd++;     
                 tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),ID));
             }
             strStart = ++strEnd;
@@ -308,14 +308,21 @@ int lexToTokens(string& content, vector<Token>& tokens) {
     return strEnd;
 }
 
-void test4Tokenizer(string contentPath) {
+bool test4Tokenizer(string contentPath) {
     lexToTokens(contentPath, tokens);
     printf("-------------------------\n");
     printf("|       Tokenizer       |\n");
     printf("-------------------------\n");
     for(Token token : tokens) {
-        printf("<@%d:%d: '%s', Line %d, %d:%d, %s>\n",
+        printf("<@%3d:%3d: '%s', Line %d, %d:%d, %s>",
                 token.start,token.end,token.lex.c_str(),token.curLine,
                 token.curStart,token.curEnd,tokenList[token.type].c_str());
+        if(token.type == UNKNOWN) {
+            printf("*** !!!Error type!!! ***");
+            cout << endl;
+            return false;
+        }
+        cout << endl;
     }
+    return true;
 }
