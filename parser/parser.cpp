@@ -536,42 +536,45 @@ static void printProduction(int i) {
 
 // FIXME: 打印预测表
 static void printPredictTable() {
-    for (int i = 0; i < grammar.T.size() / 2; i++)
-        printf("\t");
-    printf("ACTION");
-    for (int i = 0; i < grammar.N.size() / 2 + grammar.T.size() / 2 + 1; i++)
-        printf("\t");
-    printf("GOTO\n");
-    printf("\t");
+    printf("--------------------------------------------------\n");
+    printf("|                    ACTION                      |\n");
+    printf("--------------------------------------------------\n");
+    printf("%-4s","");
     for (int i = 1; i  < grammar.T.size(); i++) {
-        printf("%s\t", terminatorList[grammar.T[i]].c_str());
-    }
-    printf("|\t");
-    for (int i = 1; i  < grammar.N.size(); i++) {
-        printf("%s\t", nonTerminatorList[grammar.N[i]-100].c_str());
+        printf("%-12s", terminatorList[grammar.T[i]].c_str());
     }
     printf("\n");
     for (int i = 0; i < CC.itemSets.size(); i++) {
-        printf("%d\t", i);
+        printf("%-4d", i);
         for (int j = 1; j < grammar.T.size(); j++) {
             if (ACTION[i][j].first == Parser::Shift) {
-                printf("S%d\t", ACTION[i][j].second);
+                printf("S%-11d", ACTION[i][j].second);
             } else if (ACTION[i][j].first == Parser::Reduce) {
-                printf("R%d\t", ACTION[i][j].second);
+                printf("R%-11d", ACTION[i][j].second);
             } else if (ACTION[i][j].first == Parser::Accept) {
-                printf("ACC\t");
+                printf("ACC%-9s","");
             } else {
-                printf("\t");
+                printf("%-12s","");
             }
         }
-        printf("|\t");
+        printf("\n");
+    }
+    printf("--------------------------------------------------\n");
+    printf("|                      GOTO                      |\n");
+    printf("--------------------------------------------------\n");
+    printf("%-4s","");
+    for (int i = 1; i  < grammar.N.size(); i++) {
+        printf("%-12s", nonTerminatorList[grammar.N[i]-100].c_str());
+    }
+    printf("\n");
+    for (int i = 0; i < CC.itemSets.size(); i++) {
+        printf("%-4d", i);
         for (int j = 1; j < grammar.N.size(); j++) {
-            if (GOTO[i][j]) {
-                printf("%d\t", GOTO[i][j]);
+            if (GOTO[i][j] != -1) {
+                printf("%-12d", GOTO[i][j]);
             } else {
-                printf("\t");
+                printf("%-12s","");
             }
-            
         }
         printf("\n");
     }
@@ -700,6 +703,6 @@ void test4Parser() {
         printf("}\n");
     }
     printf("Finish building the DFA!\nDFA's size: %ld\n", CC.itemSets.size());
-    // printPredictTable();
+    printPredictTable();
     syntaxParser();
 }
