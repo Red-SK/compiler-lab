@@ -1,3 +1,6 @@
+/**
+ * 词法分析器
+ **/
 #ifndef _TOKENIZER_H_
 #define _TOKENIZER_H_
 

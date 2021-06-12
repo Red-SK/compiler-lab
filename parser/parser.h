@@ -1,3 +1,6 @@
+/**
+ * 语法分析器
+ **/
 #ifndef _PARSER_H_
 #define _PARSER_H_
 

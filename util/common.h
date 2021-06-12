@@ -7,7 +7,11 @@
 #include <vector>
 
 using namespace std;
+
+// 类型重定义
 typedef unsigned int uint; 
+typedef unsigned long long int64;
+typedef double real64;
 
 vector<string> split(const string& str, const string& delim);
 

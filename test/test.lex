@@ -3,8 +3,8 @@
     //real elsee,iff,fal,tru;
     int in44tt;
     real reall;
-    real elsee;
     bool booll;
+    int[3][4] arr;
     if (aa>=boo || false && 1) {
         aa = boo + 3.0;
         rea = fal / tru;

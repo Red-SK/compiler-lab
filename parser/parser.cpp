@@ -1,9 +1,11 @@
 #include "parser.h"
 #include "tokenizer.h"
+#include "translator.h"
 #include <cstdio>
 #include <fstream>
 #include <iostream>
 #include <algorithm>
+#include <cassert>
 #include "terminator.list"
 #include "non_terminator.list"
 
@@ -29,6 +31,11 @@ int GOTO[1000][100];
 
 // 分析栈
 stack<pair<int,int>> aStack ; // first是状态，second是符号
+
+// 当前作用域（0开始）
+int curScope = 0;
+// 引用语法制导翻译器的符号表
+extern vector<SymbolTable> blocks;
 
 // 找到终结符字符串对应的枚举值
 static int findTerminator(string T) {
@@ -621,15 +628,27 @@ void syntaxParser() {
         int topState = aStack.top().first;
         Token& curToken = tokens[ip];
         int symbol = curToken.type;
-        //cout << ACTION[topState][symbol].first << " " << ACTION[topState][symbol].second << endl;
-        //printLR1ItemSet(CC.itemSets[topState].items);
-        //printACTIONRow(topState);
+
         // 移进
         if (ACTION[topState][symbol].first == Parser::Shift) {
             aStack.push(pair<int, int>(ACTION[topState][symbol].second, symbol));
             printf("%d Shift %s\n", step++, terminatorList[symbol].c_str());
             ip++;
+            // 吃入 {
+            if(symbol == Parser::left_block) {
+                curScope++;
+                SymbolTable st;
+                blocks.push_back(st);
+                assert(curScope == blocks.size());
+            }
+            // 吃入 }
+            if(symbol == Parser::right_block) {
+                curScope--;
+                blocks.pop_back();
+                assert(curScope == blocks.size());
+            }
         } 
+
         // 规约
         else if (ACTION[topState][symbol].first == Parser::Reduce) { 
             int rIndex = ACTION[topState][symbol].second;
@@ -646,6 +665,7 @@ void syntaxParser() {
             int N = P.left;
             aStack.push(pair<int, int>(GOTO[topState][N-100], N));
         } 
+
         // 接受
         else if (ACTION[topState][symbol].first == Parser::Accept) {
             printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
@@ -654,6 +674,7 @@ void syntaxParser() {
             printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");           
             return;
         } 
+
         // 错误
         else {
             printf("*****************************\n");  
@@ -703,6 +724,6 @@ void test4Parser() {
         printf("}\n");
     }
     printf("Finish building the DFA!\nDFA's size: %ld\n", CC.itemSets.size());
-    printPredictTable();
+    //printPredictTable();
     syntaxParser();
 }
