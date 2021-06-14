@@ -30,7 +30,9 @@ pair<int,int> ACTION[1000][100]; // first是分析动作，second是转移状态
 int GOTO[1000][100]; 
 
 // 分析栈
-stack<pair<int,int>> aStack ; // first是状态，second是符号
+stack<pair<int,int>> aStack; // first是状态，second是符号
+// 属性栈
+stack<Attribute> attrStack;
 
 // 当前作用域（0开始）
 int curScope = 0;
@@ -610,6 +612,25 @@ static void printACTIONRow(int row) {
     }
 }
 
+// 判断值是否为数值类型
+static bool isTokenNum(Token& token) {
+    if(token.type == INT_NUM || token.type == REAL_NUM 
+    || token.type == TRUE || token.type == FALSE) {
+        return true;
+    }
+    return false;
+}
+
+static double makeValueByString(string& str) {
+    if(str == "true") {
+        return 1;
+    }else if(str == "false") {
+        return 0;
+    } else {
+        return atof(str.c_str());
+    }
+}
+
 // 语法分析（使用分析栈）
 void syntaxParser() {
     cout << "================" << endl;
@@ -621,6 +642,7 @@ void syntaxParser() {
     end.lex = "$";
     tokens.push_back(end);
     aStack.push(pair<int,int>(0, Parser::eof));
+    attrStack.push(Attribute());
     // 开始分析
     int ip = 0;
     int step = 1;
@@ -631,7 +653,30 @@ void syntaxParser() {
 
         // 移进
         if (ACTION[topState][symbol].first == Parser::Shift) {
+            // 压入状态、符号
             aStack.push(pair<int, int>(ACTION[topState][symbol].second, symbol));
+            // 压入属性
+            Attribute tmpAttr;
+            // 如果是数值类型
+            if( isTokenNum(curToken) ) {
+                switch(curToken.type) {
+                case TokenType::INT_NUM :
+                    tmpAttr.type = Identifier::INT;
+                    break;
+                case TokenType::REAL_NUM :
+                    tmpAttr.type = Identifier::REAL;
+                    break;
+                case TokenType::TRUE : 
+                case TokenType::FALSE :
+                    tmpAttr.type = Identifier::BOOL;
+                    break;
+                default: break;
+                } 
+                tmpAttr.value = makeValueByString(curToken.lex);
+            }
+            tmpAttr.lex = curToken.lex;
+            tmpAttr.token = curToken;
+            attrStack.push(tmpAttr);
             printf("%d Shift %s\n", step++, terminatorList[symbol].c_str());
             ip++;
             // 吃入 {
@@ -642,8 +687,9 @@ void syntaxParser() {
                 assert(curScope == blocks.size());
             }
             // 吃入 }
-            if(symbol == Parser::right_block) {
+            if(symbol == Parser::right_block) {             
                 curScope--;
+                printSymbolTable(blocks[curScope]);
                 blocks.pop_back();
                 assert(curScope == blocks.size());
             }
@@ -653,12 +699,16 @@ void syntaxParser() {
         else if (ACTION[topState][symbol].first == Parser::Reduce) { 
             int rIndex = ACTION[topState][symbol].second;
             Production& P = grammar.prods[rIndex];
+
+            syntaxDirectedTranslation(rIndex);
+
             // 弹出产生式(除了A -> ε)
             if(P.right[0] != Parser::epsilon) {
                 for (int i = 0; i < P.right.size(); i++) {
                     aStack.pop();
                 }
             }
+
             printf("%d Reduce ", step++);
             printProduction(rIndex);
             topState = aStack.top().first;
@@ -671,7 +721,9 @@ void syntaxParser() {
             printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
             printf("Ohhhhhhhhhhhhhh!!!!!!!!!!!!!!\n");
             printf("ACCEPT!!!!!!!!!!!!!!!!!!!!!!!\n");
-            printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");           
+            printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"); 
+            // 完成第一条产生式对应的语义动作
+            syntaxDirectedTranslation(0);          
             return;
         } 
 

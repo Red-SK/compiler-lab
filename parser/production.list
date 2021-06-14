@@ -4,7 +4,6 @@ Decls : Decls Decl
 Decls : ε
 Decl : Type id ;
 Type : Type [ int_num ]
-Type : Type [ real_num ]
 Type : int
 Type : real
 Type : bool
@@ -17,7 +16,6 @@ Stmt : while ( Bool ) Stmt
 Stmt : break ;
 Stmt : Block
 Var : Var [ int_num ]
-Var : Var [ real_num ]
 Var : id
 Bool : Bool || Join 
 Bool : Join
