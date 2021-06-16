@@ -36,8 +36,9 @@ stack<Attribute> attrStack;
 
 // 当前作用域（0开始）
 int curScope = 0;
-// 引用语法制导翻译器的符号表
+// 引用语法制导翻译器的符号表、四元式表
 extern vector<SymbolTable> blocks;
+extern vector<Quad> quads;
 
 // 找到终结符字符串对应的枚举值
 static int findTerminator(string T) {
@@ -700,7 +701,9 @@ void syntaxParser() {
             int rIndex = ACTION[topState][symbol].second;
             Production& P = grammar.prods[rIndex];
 
+            //cout << "aaa" << endl;
             syntaxDirectedTranslation(rIndex);
+            //cout << "bbb" << endl;
 
             // 弹出产生式(除了A -> ε)
             if(P.right[0] != Parser::epsilon) {
@@ -723,7 +726,8 @@ void syntaxParser() {
             printf("ACCEPT!!!!!!!!!!!!!!!!!!!!!!!\n");
             printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"); 
             // 完成第一条产生式对应的语义动作
-            syntaxDirectedTranslation(0);          
+            syntaxDirectedTranslation(0);  
+            printQuads(quads);        
             return;
         } 
 

@@ -14,5 +14,6 @@ typedef unsigned long long int64;
 typedef double real64;
 
 vector<string> split(const string& str, const string& delim);
+bool isZero(double num);
 
 #endif

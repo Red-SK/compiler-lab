@@ -65,14 +65,12 @@ struct Quad {
 
 // 语法单元属性
 struct Attribute {
-	using chain_t = std::unordered_set<size_t>;	// 用于回填的四元式地址链
 
 	Attribute() = default;
 	~Attribute() = default;
 
-	chain_t chain;	// 和拉链回填有关的属性
-	chain_t TC;
-	chain_t FC;
+	unordered_set<int> TC;		// 该属性为真时的跳转指令链
+	unordered_set<int> FC;		// 该属性为假时的跳转指令链
 	int quad;
 
 	string lex;				// 词素
@@ -81,23 +79,15 @@ struct Attribute {
 	string tempIdName;		// 临时变量名
 	Token  token;			// Token信息
 
-	// 回填
-	void backpatch(chain_t Attribute::* pchain, int n, std::vector<Quad> & quads) {
-		for (auto& i : this->*pchain) {
-			quads[i].dest = to_string(n);
-		}
-	}
-	// 合并
-	void merge(chain_t Attribute::*pchain, const chain_t& chain1, const chain_t& chain2) {
-		(this->*pchain).insert(chain1.begin(), chain1.end());
-		(this->*pchain).insert(chain2.begin(), chain2.end());
-	}
 };
 
-int findIdInfo(string& idName);
-bool setIdVal(string& idName, string& num, int type);
+int findIdScope(string& idName);
+bool setIdVal(string& idName, double value);
 /* 语法制导翻译核心 */
 void syntaxDirectedTranslation(int productionId);
 void printSymbolTable(SymbolTable& table);
+void printQuads(vector<Quad>& quads);
+void backpatch(unordered_set<int>& pchain, int i, vector<Quad>& quads);
+unordered_set<int> merge(const unordered_set<int>& chain1, const unordered_set<int>& chain2);
 
 #endif

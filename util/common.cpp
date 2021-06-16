@@ -21,3 +21,8 @@ vector<string> split(const string& str, const string& delim) {
  
 	return res;  
 } 
+
+// 判断是否为0
+bool isZero(double num) {
+	return ( abs(num) < 0.000001 );
+}
