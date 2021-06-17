@@ -7,19 +7,19 @@ Type : Type [ int_num ]
 Type : int
 Type : real
 Type : bool
-Stmts : Stmts Stmt 
+Stmts : Stmts M Stmt 
 Stmts : ε
 Stmt : Var = Bool ;
-Stmt : if ( Bool ) Stmt
-Stmt : if ( Bool ) Stmt else Stmt
-Stmt : while ( Bool ) Stmt
+Stmt : if ( Bool ) M Stmt
+Stmt : if ( Bool ) M Stmt HN else M Stmt
+Stmt : while M ( Bool ) M Stmt
 Stmt : break ;
 Stmt : Block
 Var : Var [ int_num ]
 Var : id
-Bool : Bool || Join 
+Bool : Bool || M Join 
 Bool : Join
-Join : Join && Equality 
+Join : Join && M Equality 
 Join : Equality
 Equality : Equality == Rel 
 Equality : Equality != Rel 
@@ -44,3 +44,5 @@ Factor : int_num
 Factor : real_num 
 Factor : true 
 Factor : false
+HN : ε
+M : ε

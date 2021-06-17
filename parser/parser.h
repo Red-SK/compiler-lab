@@ -74,7 +74,9 @@ namespace Parser {
         Expr,     
         Term,    
         Unary,	 
-        Factor	 
+        Factor,
+        HN,
+        M
     } NonTerminator;
 
     // 动作
@@ -90,6 +92,7 @@ namespace Parser {
  *  Grammar[Program]
  *  LR(1)
  *  ε: epsilon
+ *  not the latest!!!
  * 
     Program   → Block
     Block     → { Decls Stmts }

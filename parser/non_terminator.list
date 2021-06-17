@@ -15,5 +15,7 @@ string nonTerminatorList[] = {
     "Expr",     
     "Term",    
     "Unary",	 
-    "Factor"
+    "Factor",
+    "HN",
+    "M"
 };

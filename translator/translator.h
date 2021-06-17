@@ -71,7 +71,8 @@ struct Attribute {
 
 	unordered_set<int> TC;		// 该属性为真时的跳转指令链
 	unordered_set<int> FC;		// 该属性为假时的跳转指令链
-	int quad;
+	unordered_set<int> NC;		// 跳转到该代码后的跳转指令链
+	int nextInstr;				// 下一条指令位置
 
 	string lex;				// 词素
 	Identifier::Type type;	// 类型

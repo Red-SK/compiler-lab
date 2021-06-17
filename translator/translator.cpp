@@ -49,11 +49,23 @@ bool setIdVal(string& idName, double value) {
     return false;
 }
 
+// 打印集合
+static void printSet(const unordered_set<int>& s) {
+    cout << "{ ";
+    for(int num : s) {
+        cout << num << " ";
+    }
+    cout << "}" << endl;
+}
+
 // 回填
 void backpatch(unordered_set<int>& pchain, int num, vector<Quad>& quads) {
+    printSet(pchain);
     for (auto& i : pchain) {
         quads[i-1].dest = to_string(num);
+        
     }
+    printSet(pchain);
 }
 
 // 合并
@@ -74,6 +86,7 @@ void syntaxDirectedTranslation(int no) {
 	vector<Attribute> attrCache;	// 缓存一下弹出的属性
     Production production = grammar.prods[no];
     SymbolTable* curSymTable = nullptr; // 当前符号表
+    unordered_set<int> tmpSet;  // 指令链缓存
 
     if(blocks.size() != 0) {
         curSymTable = &( blocks.back() );
@@ -91,15 +104,16 @@ void syntaxDirectedTranslation(int no) {
 
     switch(no) {
 
-    // TODO Program : Block
+    // Program : Block
     case 0: 
-		//attrCache[0].backpatch(pchain, quadNo, quads);
+		backpatch(attrCache[0].NC, quadNo, quads);
         quads.push_back(Quad("End", "_", "_", "_"));
+        quadNo++;
         break;
 
-    // TODO Block : { Decls Stmts }
+    // Block : { Decls Stmts }
     case 1:
-		//res.chain = attrCache[1].chain;
+		res.NC = attrCache[1].NC;
 		break;
 
     // Decls : Decls Decl
@@ -144,11 +158,10 @@ void syntaxDirectedTranslation(int no) {
         res.type = Identifier::BOOL;
         break;
 
-    // TODO Stmts : Stmts Stmt
+    // Stmts : Stmts M Stmt
     case 9: 
-        // res.chain = attrCache[0].chain;
-        // pchain = &Attribute::chain;
-		// attrCache[1].backpatch(pchain, quadNo, quads);
+        backpatch(attrCache[2].NC, attrCache[1].nextInstr, quads);
+        res.NC = attrCache[0].NC;
         break; 
 
     // Stmts : ε
@@ -156,7 +169,10 @@ void syntaxDirectedTranslation(int no) {
 
     // Stmt : Var = Bool ;
     case 11: {
-		//res.chain = Attribute::chain_t();
+        // 取消跳转指令
+        quadNo -= 2;
+        quads.pop_back();
+        quads.pop_back();
         string varName = attrCache[3].lex;
         int tScope = findIdScope(varName);
 		if ( tScope != -1 ) {
@@ -193,10 +209,7 @@ void syntaxDirectedTranslation(int no) {
 			}
             res.FC = attrCache[1].FC;
             res.TC = attrCache[1].TC;
-            backpatch(attrCache[1].FC, quadNo, quads);
-            cout << "aaaa" << quadNo << endl;
-            backpatch(attrCache[1].TC, quadNo, quads);
-            cout << "bbbb" << quadNo << endl;
+            res.NC = { };
 			quads.push_back(Quad("=", attrCache[1].tempIdName, "_", "VAR(" + attrCache[3].lex + ")"));
 			quadNo++;
 			setIdVal(attrCache[3].lex, attrCache[1].value);
@@ -208,21 +221,28 @@ void syntaxDirectedTranslation(int no) {
     } 
         break; 
 
-    // TODO Stmt : if ( Bool ) Stmt
+    // Stmt : if ( Bool ) M Stmt
     case 12: 
-		backpatch(attrCache[2].TC, quadNo, quads);
-		res.TC = attrCache[2].TC;
-		res.FC = attrCache[2].FC;
+		backpatch(attrCache[3].TC, attrCache[1].nextInstr, quads);
+        res.NC = merge(attrCache[3].FC, attrCache[0].NC);
         break; 
         
-    // TODO Stmt : if ( Bool ) Stmt else Stmt
+    // Stmt : if ( Bool ) M Stmt HN else M Stmt
     case 13: 
-
+		backpatch(attrCache[7].TC, attrCache[5].nextInstr, quads);
+		backpatch(attrCache[7].FC, attrCache[1].nextInstr, quads);
+        tmpSet = merge(attrCache[4].NC, attrCache[3].NC);
+        res.NC = merge(tmpSet, attrCache[0].NC);
         break; 
         
-    // TODO Stmt : while ( Bool ) Stmt
+    // Stmt : while M ( Bool ) M Stmt
     case 14: 
-
+        res.nextInstr = quadNo;
+		backpatch(attrCache[0].NC, attrCache[5].nextInstr, quads);
+		backpatch(attrCache[3].TC, attrCache[1].nextInstr, quads);
+        res.NC = attrCache[3].FC;
+        quads.push_back(Quad("jump", "_", "_", "_"));
+		quadNo++;
         break; 
         
     // TODO Stmt : break ;
@@ -232,7 +252,8 @@ void syntaxDirectedTranslation(int no) {
         
     // Stmt : Block
     case 16: 
-        //res.chain = attrCache[0].chain;
+        res.nextInstr = quadNo;
+        res.NC = attrCache[0].NC;
         break; 
 
     // TODO Var : Var [ int_num ]
@@ -248,12 +269,12 @@ void syntaxDirectedTranslation(int no) {
         res.lex = attrCache[0].lex;
         break; 
 
-    // Bool : Bool || Join 
+    // Bool : Bool || M Join
     case 19: 
-        res.tempIdName = attrCache[2].tempIdName + " || " + attrCache[0].tempIdName;
-		res.value = (attrCache[2].value || attrCache[0].value);
-        backpatch(attrCache[2].FC, quadNo, quads);
-        res.TC = merge(attrCache[2].TC, attrCache[0].TC); 
+        res.tempIdName = "t" + to_string(tmpIdx++);
+		res.value = (attrCache[3].value || attrCache[0].value);
+        backpatch(attrCache[3].FC, attrCache[1].nextInstr, quads);
+        res.TC = merge(attrCache[3].TC, attrCache[0].TC); 
         res.FC = attrCache[0].FC;
         break; 
 
@@ -266,13 +287,17 @@ void syntaxDirectedTranslation(int no) {
 		res.FC = attrCache[0].FC;
         break; 
 
-    // Join : Join && Equality 
+    // Join : Join && M Equality 
     case 21: 
-        res.tempIdName = attrCache[2].tempIdName + " && " + attrCache[0].tempIdName;
-		res.value = (attrCache[2].value && attrCache[0].value);
-        backpatch(attrCache[2].TC, quadNo, quads);
+        res.tempIdName = "t" + to_string(tmpIdx++);
+		res.value = (attrCache[3].value && attrCache[0].value);
+        backpatch(attrCache[3].TC, attrCache[1].nextInstr, quads); 
         res.TC = attrCache[0].TC;
-        res.FC = merge(attrCache[2].FC, attrCache[0].FC);      
+        res.FC = merge(attrCache[3].FC, attrCache[0].FC);   
+        quads.push_back(Quad("jTrue", attrCache[0].tempIdName, "_", "_"));
+		quadNo++;
+		quads.push_back(Quad("jump", "_", "_", "_"));
+		quadNo++;   
         break; 
 
     // Join : Equality
@@ -569,6 +594,16 @@ void syntaxDirectedTranslation(int no) {
         res.tempIdName = "false";
         res.value = 0;
         res.type = Identifier::BOOL;
+        break; 
+    // HN : ε
+    case 46:
+        res.NC = { quadNo };
+        quads.push_back(Quad("jump","_", "_", "_"));
+        quadNo++;
+        break; 
+    // M : ε
+    case 47:
+        res.nextInstr = quadNo;
         break; 
     default:
         cout << "Syntax Directed Translation Err at " << no << "!!!" << endl;

@@ -52,7 +52,7 @@ static int findTerminator(string T) {
 
 // 找到非终结符字符串对应的枚举值
 static int findNonTerminator(string N) {
-    for(int i = Parser::Program;i<=Parser::Factor;i++) {
+    for(int i = Parser::Program;i<=Parser::M;i++) {
         if(nonTerminatorList[i-100] == N) {
             return i;
         }
@@ -126,7 +126,7 @@ static void initGrammar() {
         grammar.T.push_back(i);
     }
     // 载入非终结符（需要偏移）
-    for(int i = Parser::Program;i<=Parser::Factor;i++) {
+    for(int i = Parser::Program;i<=Parser::M;i++) {
         grammar.N.push_back(i);
     }
     // 载入产生式
@@ -690,7 +690,7 @@ void syntaxParser() {
             // 吃入 }
             if(symbol == Parser::right_block) {             
                 curScope--;
-                printSymbolTable(blocks[curScope]);
+                //printSymbolTable(blocks[curScope]);
                 blocks.pop_back();
                 assert(curScope == blocks.size());
             }
