@@ -60,12 +60,9 @@ static void printSet(const unordered_set<int>& s) {
 
 // 回填
 void backpatch(unordered_set<int>& pchain, int num, vector<Quad>& quads) {
-    printSet(pchain);
     for (auto& i : pchain) {
         quads[i-1].dest = to_string(num);
-        
     }
-    printSet(pchain);
 }
 
 // 合并
@@ -237,11 +234,10 @@ void syntaxDirectedTranslation(int no) {
         
     // Stmt : while M ( Bool ) M Stmt
     case 14: 
-        res.nextInstr = quadNo;
 		backpatch(attrCache[0].NC, attrCache[5].nextInstr, quads);
 		backpatch(attrCache[3].TC, attrCache[1].nextInstr, quads);
         res.NC = attrCache[3].FC;
-        quads.push_back(Quad("jump", "_", "_", "_"));
+        quads.push_back(Quad("jump", "_", "_", to_string(attrCache[5].nextInstr)));
 		quadNo++;
         break; 
         
@@ -252,7 +248,6 @@ void syntaxDirectedTranslation(int no) {
         
     // Stmt : Block
     case 16: 
-        res.nextInstr = quadNo;
         res.NC = attrCache[0].NC;
         break; 
 
@@ -293,11 +288,7 @@ void syntaxDirectedTranslation(int no) {
 		res.value = (attrCache[3].value && attrCache[0].value);
         backpatch(attrCache[3].TC, attrCache[1].nextInstr, quads); 
         res.TC = attrCache[0].TC;
-        res.FC = merge(attrCache[3].FC, attrCache[0].FC);   
-        quads.push_back(Quad("jTrue", attrCache[0].tempIdName, "_", "_"));
-		quadNo++;
-		quads.push_back(Quad("jump", "_", "_", "_"));
-		quadNo++;   
+        res.FC = merge(attrCache[3].FC, attrCache[0].FC);  
         break; 
 
     // Join : Equality
@@ -305,12 +296,8 @@ void syntaxDirectedTranslation(int no) {
         res.tempIdName = attrCache[0].tempIdName;
         res.value = attrCache[0].value;
         res.type = attrCache[0].type;
-        res.TC = { quadNo };
-		res.FC = { quadNo + 1 };
-		quads.push_back(Quad("jTrue", attrCache[0].tempIdName, "_", "_"));
-		quadNo++;
-		quads.push_back(Quad("jump", "_", "_", "_"));
-		quadNo++;
+        res.TC = attrCache[0].TC;
+        res.FC = attrCache[0].FC;
         break; 
 
     // Equality : Equality == Rel 
@@ -334,6 +321,12 @@ void syntaxDirectedTranslation(int no) {
         res.tempIdName = attrCache[0].tempIdName;
         res.value = attrCache[0].value;
         res.type = attrCache[0].type;
+        res.TC = { quadNo };
+		res.FC = { quadNo + 1 };
+		quads.push_back(Quad("jTrue", attrCache[0].tempIdName, "_", "_"));
+		quadNo++;
+		quads.push_back(Quad("jump", "_", "_", "_"));
+		quadNo++;
         break; 
 
     // Rel : Expr < Expr 
@@ -572,7 +565,7 @@ void syntaxDirectedTranslation(int no) {
 
     // Factor : int_num   
     case 42:
-        res.tempIdName = to_string(attrCache[0].value);
+        res.tempIdName = to_string((int)attrCache[0].value);
         res.value = attrCache[0].value;
         res.type = Identifier::INT;
         break; 
