@@ -162,7 +162,8 @@ int lexToTokens(string& content, vector<Token>& tokens) {
                 tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),AND));                
                 strStart = ++strEnd;
             } else {
-                ;
+                tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),UNKNOWN));
+                strStart = ++strEnd;
             }
         }
         else if(content[strStart] == '|') {
@@ -171,7 +172,8 @@ int lexToTokens(string& content, vector<Token>& tokens) {
                 tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),OR));                
                 strStart = ++strEnd;
             } else {
-                ;
+                tokens.push_back(*makeToken(content.substr(strStart,strEnd-strStart+1),UNKNOWN));
+                strStart = ++strEnd;
             }
         }
         else if(content[strStart] == ';') {

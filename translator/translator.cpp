@@ -241,9 +241,10 @@ void syntaxDirectedTranslation(int no) {
 		quadNo++;
         break; 
         
-    // TODO Stmt : break ;
+    // Stmt : break ;
     case 15: 
-
+        quads.push_back(Quad("jump", "_", "_", to_string(quadNo+2)));
+		quadNo++;
         break; 
         
     // Stmt : Block

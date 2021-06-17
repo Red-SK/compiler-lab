@@ -15,5 +15,9 @@
     }
     else{int elsee;elsee=3;}
     booll = false;
-    while(1) { booll = false; }
+    while(1) { 
+        in44tt = 2;
+        while(0) {break;in44tt = 1;}
+        booll = false;
+    }
 }
